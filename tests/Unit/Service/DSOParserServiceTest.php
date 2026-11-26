@@ -242,7 +242,7 @@ class DSOParserServiceTest extends TestCase {
 	 * is the name, the URL path is the fallback, and an entry without a URL
 	 * is kept so the download job can record it as failed.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.2
+	 * @spec openspec/changes/archive/2026-11-26-dso-attachments-on-the-request/tasks.md#task-1.2
 	 *
 	 * @return void
 	 */

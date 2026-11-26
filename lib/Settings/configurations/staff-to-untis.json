@@ -21,7 +21,7 @@
       "staff-to-untis-source": {
         "slug": "staff-to-untis-source",
         "name": "Untis Platform APIs",
-        "description": "The Untis central API gateway for the teacher and teacher absence APIs. Dormant: register an Untis platform application, store its platform-generated password (not the OIDC client secret) in the credential broker under the name staff-to-untis-client-secret, put the client id in client_id and the school's tenant id in the token URL in place of TENANT_ID, and enable the source. The token is tenant-scoped and lives three minutes. Untis allows 40 requests a second and asks that large synchronisation jobs run off-peak (Monday to Friday 19:00 to 05:00, or at weekends).",
+        "description": "The Untis central API gateway for the teacher and teacher absence APIs. Dormant: register an Untis platform application, store its platform-generated password (not the OIDC client secret) in the credential broker under the name staff-to-untis-client-secret, put the client id in client_id and the school's tenant id in the token URL in place of TENANT_ID, add humaniq/OrgAssignment to the mapping lookup allowlist (the teacher mapping reads assignment end dates; without it every teacher push fails naming the schema), and enable the source. The token is tenant-scoped and lives three minutes. Untis allows 40 requests a second and asks that large synchronisation jobs run off-peak (Monday to Friday 19:00 to 05:00, or at weekends).",
         "type": "api",
         "location": "https://api.webuntis.com/WebUntis",
         "documentation": "https://developer.untis.com/api-reference/webuntis-apis/",
@@ -56,7 +56,7 @@
       "staff-to-untis-teacher": {
         "slug": "staff-to-untis-teacher",
         "name": "humaniq employee to Untis teacher",
-        "description": "One humaniq Employee as one teacher in an Untis Teacher Management v2 batch body. Allow-list: the Nextcloud user id as external key (the employee's uuid when it has none), the employee number as short name, last name, first name, start date as entry date, end date as exit date, and active while the end date is not past. Nothing else is read: no BSN, salary, bank account, contract, identity document, address, birth date or private e-mail. Untis keeps e-mail on a user account, not on the teacher, so no e-mail is sent.",
+        "description": "One humaniq Employee as one teacher in an Untis Teacher Management v2 batch body. Allow-list: the Nextcloud user id as external key (the employee's uuid when it has none), the employee number as short name, last name, first name, start date as entry date, and from the employee's humaniq OrgAssignment rows only their end dates (read with lookupAll, so humaniq/OrgAssignment must be on the lookup allowlist). The exit date is the employment end date, else the last assignment end once every assignment has one. The teacher is active while the employment has not ended and at least one assignment is open; an employee without any assignment row follows the employment end date alone. Nothing else is read: no BSN, salary, bank account, contract, identity document, address, birth date or private e-mail. Untis keeps e-mail on a user account, not on the teacher, so no e-mail is sent.",
         "version": "1.0.0",
         "passThrough": false,
         "mapping": {
@@ -65,8 +65,8 @@
           "teachers.0.lastName": "{{ lastName|default('')|raw }}",
           "teachers.0.forename": "{{ firstName|default('')|raw }}",
           "teachers.0.entryDate": "{% if startDate is not empty %}{{ startDate|date('Y-m-d') }}{% endif %}",
-          "teachers.0.exitDate": "{% if endDate is not empty %}{{ endDate|date('Y-m-d') }}{% endif %}",
-          "teachers.0.active": "{% if endDate is empty or endDate|date('Y-m-d') >= 'now'|date('Y-m-d') %}true{% else %}false{% endif %}"
+          "teachers.0.exitDate": "{% if endDate is not empty %}{{ endDate|date('Y-m-d') }}{% else %}{% set ends = lookupAll('humaniq/OrgAssignment', {'employeeId': id|default('')}, 'endDate') %}{% if ends is not empty and ends|filter(e => e is empty) is empty %}{{ ends|map(e => e|date('Y-m-d'))|sort|last }}{% endif %}{% endif %}",
+          "teachers.0.active": "{% set ends = lookupAll('humaniq/OrgAssignment', {'employeeId': id|default('')}, 'endDate') %}{% set today = 'now'|date('Y-m-d') %}{% if endDate is not empty and endDate|date('Y-m-d') < today %}false{% elseif ends is empty or ends|filter(e => e is empty or e|date('Y-m-d') >= today) is not empty %}true{% else %}false{% endif %}"
         },
         "unset": [],
         "cast": {
@@ -102,7 +102,7 @@
       "staff-to-untis-teachers": {
         "slug": "staff-to-untis-teachers",
         "name": "humaniq employees to Untis teachers",
-        "description": "Creates or updates the Untis teacher for a humaniq Employee when it is created or changed. A leaver is sent with active false and the exit date; deleting an employee in humaniq sends nothing, because the Untis teacher API has no delete and past lessons keep their teacher.",
+        "description": "Creates or updates the Untis teacher for a humaniq Employee when it is created or changed, and again when one of the employee's OrgAssignment rows is created or changed, so an assignment that ends reaches Untis as the teacher's exit date without anyone saving the employee. A deleted assignment takes effect on the employee's next save. A leaver is sent with active false and the exit date; deleting an employee in humaniq sends nothing, because the Untis teacher API has no delete and past lessons keep their teacher.",
         "version": "1.0.0",
         "sourceId": "humaniq/Employee",
         "sourceType": "register/schema",
@@ -110,7 +110,15 @@
           "triggerOnlyOnEvents": [
             "CREATE",
             "UPDATE"
-          ]
+          ],
+          "triggerFromRelatedObjects": {
+            "humaniq/OrgAssignment": {
+              "employeeId": [
+                "create",
+                "update"
+              ]
+            }
+          }
         },
         "sourceTargetMapping": "staff-to-untis-teacher",
         "targetId": "staff-to-untis-source",

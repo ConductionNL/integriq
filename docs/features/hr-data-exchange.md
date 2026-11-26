@@ -42,5 +42,36 @@ Both templates are listed in the connector catalogue under **Education data**.
 
 ## Payroll bureaus
 
-The payroll handoff to Loket.nl, Nmbrs or an SFTP drop is part of the same
-change (`connectors-hr-data-exchange`, REQ-HRX-001) and is not shipped yet.
+When HR sets a humaniq payroll handoff to *ready* (`klaargezet`), its
+mutations go to the bureau that runs the administration's payroll. Integriq
+ships a dormant template per kind of bureau, each with the mapping that writes
+the handoff in that bureau's format:
+
+| Object | Slug | What it does |
+|--------|------|--------------|
+| Source | `loket-payroll` | Loket.nl REST API v2, OAuth 2.0 client credentials |
+| Mapping | `payroll-handoff-to-loket-mutations` | one Loket.nl mutation per handoff mutation, with only the new values |
+| Source | `nmbrs-payroll` | Nmbrs REST API, OAuth 2.0 client credentials |
+| Mapping | `payroll-handoff-to-nmbrs-changes` | one Nmbrs change per changed field, with the old and the new value |
+| Source | `payroll-sftp-drop` | a bureau without an API, over SFTP |
+| Mapping | `payroll-handoff-to-csv-rows` | one CSV file `<loonheffingennummer>-<period>.csv`, one row per changed field |
+
+The mappings read the handoff with its mutations and its administration. A
+mutation without an effective date applies from the first day of the period.
+The humaniq employee id travels as the employee reference, so agree with the
+bureau that it is the key it files the employee under.
+
+All three templates are listed in the connector catalogue under **Payroll**.
+The synchronizations that deliver a handoff and bring the payslips back
+(`payroll-handoff-push`, `payroll-payslip-pull`) are not shipped yet.
+
+## Connect a payroll bureau
+
+1. **In the credential broker**, store the bureau's OAuth client secret as
+   `loket-payroll-client-secret` or `nmbrs-payroll-client-secret`; for the
+   SFTP drop, store the account's password or key.
+2. **In integriq**, open the bureau's source: fill the employer id (Loket.nl)
+   or the company id (Nmbrs) and the client id, check the paths against the
+   bureau's API documentation, then enable it. For the SFTP drop, set the
+   server, the root path and the host key fingerprint the first test shows,
+   and agree the folders and the delimiter with the bureau.

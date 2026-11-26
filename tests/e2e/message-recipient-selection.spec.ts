@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * Spec coverage: openspec/specs/message-recipient-selection/spec.md
  * (REQ-MRS-003 the record says why a recipient was left out, REQ-MRS-004 a
  * required recipient cannot be suppressed).
  *

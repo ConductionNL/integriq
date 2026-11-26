@@ -51,7 +51,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * `example-person-xsd` message schemas. Only the fetch, the contract step and
  * the HTTP client are stand-ins.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-synchronization-validates-source-objects-and-target-bodies-req-msv-003
  */
 class SynchronizationMessageValidationTest extends TestCase {
 

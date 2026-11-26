@@ -109,15 +109,42 @@ class ApprovalVerdictVerifier {
 	 * @return string The raw Ed25519 public key.
 	 *
 	 * @throws AgentActionRefusedException When none is published.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
 	 */
 	private function publicKey(): string {
-		$publicKey = base64_decode($this->appConfig->getValueString(app: self::PUBLIC_KEY_APP, key: self::PUBLIC_KEY_NAME), true);
-		if ($publicKey === false || strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+		$publicKey = $this->storedPublicKey();
+		if ($publicKey === null) {
+			// Hermiq makes its key pair on first use, inside the verdict
+			// request this one just made. This request loaded the app values
+			// before that, so the first approval on an instance read no key
+			// and was refused. Read them once more from the database.
+			$this->appConfig->clearCache(reload: true);
+			$publicKey = $this->storedPublicKey();
+		}
+
+		if ($publicKey === null) {
 			throw new AgentActionRefusedException(reason: 'no-verifier-key');
 		}
 
 		return $publicKey;
 	}//end publicKey()
+
+	/**
+	 * The published verdict key as the app values hold it now, or null.
+	 *
+	 * @return string|null The raw Ed25519 public key, or null when none or a malformed one is published.
+	 *
+	 * @spec openspec/changes/hermiq-ai-tooling/specs/openconnector-mcp-tool-surface/spec.md#requirement-req-mcp-107--run-replay-and-discard-must-be-two-phase-with-a-server-verified-human-approval-bound-to-the-batch
+	 */
+	private function storedPublicKey(): ?string {
+		$publicKey = base64_decode($this->appConfig->getValueString(app: self::PUBLIC_KEY_APP, key: self::PUBLIC_KEY_NAME), true);
+		if ($publicKey === false || strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES) {
+			return null;
+		}
+
+		return $publicKey;
+	}//end storedPublicKey()
 
 	/**
 	 * The verdict, when its signature verifies against the key.

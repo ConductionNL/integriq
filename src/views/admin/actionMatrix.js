@@ -57,7 +57,7 @@ export function savePayload(actions, matrix) {
  * @param {{areas?: object|null, labels?: object|null}} names Action name to area, and action name to label.
  * @return {Array<{area: string, actions: Array<{name: string, label: string}>}>} The sections.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-the-screen-groups-actions-by-area-with-labels-req-arc-002
  */
 export function actionSections(actions, names) {
 	const { areas, labels } = names || {}
@@ -89,7 +89,7 @@ export const EVERY_SIGNED_IN_USER = 'authenticated'
  * @param {string} name The action name.
  * @return {boolean} True for `object.<schema>.<verb>`.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  */
 export function isObjectRight(name) {
 	return typeof name === 'string' && /^object\.[a-z_]+\.(create|read|update|delete)$/.test(name)
@@ -103,7 +103,7 @@ export function isObjectRight(name) {
  * @param {Array<string>} groups The Nextcloud group ids.
  * @return {Array<string>} The columns.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  */
 export function sectionColumns(section, groups) {
 	const rest = (Array.isArray(groups) ? groups : []).filter((g) => g !== 'admin' && g !== EVERY_SIGNED_IN_USER)
@@ -118,7 +118,7 @@ export function sectionColumns(section, groups) {
  * @param {string} name The action name.
  * @return {boolean} True when the screen warns on the row.
  *
- * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+ * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
  */
 export function warnsOnGrant(name) {
 	return name === 'object.source.read' || name === 'object.consumer.read'

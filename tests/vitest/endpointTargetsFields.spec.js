@@ -9,7 +9,7 @@
  * one's share; the sticky switch shows once there are two targets; a stored
  * rule is kept; and the rows convert both ways.
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
  */
 
 import { flushPromises, mount } from '@vue/test-utils'

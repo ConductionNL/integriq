@@ -26,7 +26,7 @@ namespace OCA\Integriq\Service\Call;
  * Wall-clock microseconds and a real sleep, kept in one class so a test can
  * replace both with a clock it moves itself.
  *
- * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+ * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
  */
 class PacerClock {
 
@@ -35,7 +35,7 @@ class PacerClock {
 	 *
 	 * @return int Microseconds.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function nowMicros(): int {
 		return (int)round(microtime(true) * 1000000);
@@ -48,7 +48,7 @@ class PacerClock {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function sleepMicros(int $micros): void {
 		if ($micros > 0) {

@@ -9,7 +9,7 @@
   reason. The server refuses an empty reason; its refusal is shown as is.
   Emits `waived` with the finding the server returned, and `close`.
 
-  @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+  @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 -->
 <template>
 	<NcDialog
@@ -94,7 +94,7 @@ export default {
 		 * Waive the finding with the reason given.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 		 */
 		async submit() {
 			this.busy = true
@@ -117,7 +117,7 @@ export default {
 		 * Close without waiving.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/gateway-api-design-rules-check/tasks.md
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/tasks.md
 		 */
 		close() {
 			this.error = ''
@@ -129,7 +129,7 @@ export default {
 		 *
 		 * @param {boolean} value Whether it should stay open
 		 * @return {void}
-		 * @spec openspec/changes/gateway-api-design-rules-check/tasks.md
+		 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/tasks.md
 		 */
 		onOpenChanged(value) {
 			if (value === false) {

@@ -75,14 +75,14 @@
 
 ## Verification
 - [ ] All tasks checked off
-- [ ] `openspec validate hermiq-ai-tooling --type change --strict` passes
+- [x] `openspec validate hermiq-ai-tooling --type change --strict` passes
 - [ ] Manual testing against acceptance criteria (matrix denial, rejected batch, approved batch, token replay, `forceDeletion` rejection)
 - [ ] Code review against spec requirements
 
 ## Tests (company-wide ADR-009)
 
 - [x] PHPUnit unit tests for metadata, argument validation, matrix layering, gate parity, two-phase state machine, token binding, attribution, and projection key-set (`tests/Unit/Mcp/`, Tasks 1–5); zero new failures vs a self-measured baseline
-- [ ] Browser tests (Playwright MCP): `tests/e2e/spec-coverage/hermiq-ai-tooling.spec.ts` (Task 6) — written, lint-clean and listed; not run (needs an instance with Hermiq)
+- [x] Browser tests (Playwright MCP): `tests/e2e/spec-coverage/hermiq-ai-tooling.spec.ts` (Task 6): run live 25 Nov 2026 on NC 34 + MariaDB with hermiq development, 5/5. The run found the first approval on an instance refused with `no-verifier-key` (Hermiq makes its key during the verdict request; the verifier now reloads the app values once), and corrected the spec to OpenRegister's listing (tools by `id`, `readOnlyHint` on the descriptor), the dead letter schema (`attempts` is a list) and the dead letters page (the synchronization tab).
 - [ ] All tests pass (`composer test`)
 - Newman/Postman: N/A — no Integriq HTTP endpoint is added; the MCP surface is served by OpenRegister's `/api/mcp`, and the delegated controller paths keep their existing collection coverage.
 

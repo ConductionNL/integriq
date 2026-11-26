@@ -65,8 +65,8 @@ trait CatalogiFixture {
 			'domein' => 'WOO',
 			'rsin' => '002220647',
 			'naam' => 'Documenttypen',
-			'register' => 'documents',
-			'schema' => 'documentType',
+			'typesRegister' => 'documents',
+			'typesSchema' => 'documentType',
 			'clients' => [
 				['clientId' => 'reader', 'scopes' => ['catalogi.lezen']],
 				['clientId' => 'concepts', 'scopes' => ['catalogi.lezen'], 'concepts' => true],

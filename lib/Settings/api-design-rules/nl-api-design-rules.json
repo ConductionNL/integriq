@@ -266,6 +266,7 @@
 			"title": "Document contact information for publicly available APIs",
 			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/doc-openapi-contact",
 			"severity": "error",
+			"scope": "gateway",
 			"given": "$",
 			"then": {
 				"field": "info.contact",
@@ -316,6 +317,7 @@
 			"title": "Include the major version number in the URI",
 			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/uri-version",
 			"severity": "error",
+			"scope": "gateway",
 			"given": "$.servers.*",
 			"then": {
 				"field": "url",
@@ -359,6 +361,7 @@
 			"title": "Return the full version number in a response header",
 			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/version-header",
 			"severity": "error",
+			"scope": "gateway",
 			"given": "$.paths.*.*.responses[?(@property.match(/^[23]\\d\\d$/))]",
 			"then": {
 				"field": "headers",
@@ -403,6 +406,7 @@
 			"title": "Secure connections using TLS",
 			"url": "https://gitdocumentatie.logius.nl/publicatie/api/adr/2.2.2/#/core/transport/tls",
 			"severity": "error",
+			"scope": "gateway",
 			"given": [
 				"$.servers.*",
 				"$.paths..servers.*"

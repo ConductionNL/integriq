@@ -118,6 +118,9 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		// Test a draft rule against a sample and route held messages again
 		// (openspec/changes/messaging-intake-routing-rules D2, D3), behind `intake.rules`.
 		['name' => 'intakeChannels#testRule', 'url' => '/api/intake/routing-rules/test', 'verb' => 'POST'],
+		// What the signed-in user may do from the inbox, so the Assign and Reply
+		// row actions show only to a handler with the right (REQ-IC-021).
+		['name' => 'intakeChannels#rights', 'url' => '/api/intake/messages/rights', 'verb' => 'GET'],
 		['name' => 'intakeChannels#routeAgainMany', 'url' => '/api/intake/messages/route', 'verb' => 'POST'],
 		['name' => 'intakeChannels#routeAgain', 'url' => '/api/intake/messages/{id}/route', 'verb' => 'POST'],
 		['name' => 'intakeChannels#saveRule', 'url' => '/api/intake/routing-rules', 'verb' => 'POST'],
@@ -125,7 +128,7 @@ return \OCA\Integriq\Middleware\Support\ApiPathAliases::withVersionedAliases([
 		['name' => 'intakeChannels#reply', 'url' => '/api/intake/messages/{id}/reply', 'verb' => 'POST'],
 		['name' => 'intakeChannels#assign', 'url' => '/api/intake/messages/{id}/assign', 'verb' => 'POST'],
 
-		// The outbound communication log (openspec/changes/outbound-communication-log).
+		// The outbound communication log (openspec/changes/archive/2026-11-26-outbound-communication-log).
 		// Listing the log is the declarative page over `outbound_message`; these are
 		// the acts on it. Reading a stored body sits behind its own action
 		// (`outbound.read-body`), distinct from seeing that a message was sent,

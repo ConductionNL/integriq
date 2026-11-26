@@ -34,7 +34,7 @@ async function fetchMessageSchemaList() {
  * editors: the option list, its loading flag, and the option for a stored
  * schema uuid.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  */
 export default {
 	data() {
@@ -51,7 +51,7 @@ export default {
 		 * list empty.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		async fetchMessageSchemas() {
 			this.messageSchemasLoading = true
@@ -75,7 +75,7 @@ export default {
 		 *
 		 * @param {string|undefined} uuid The stored uuid.
 		 * @return {object|null} The option, or null when none is stored.
-		 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+		 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 		 */
 		messageSchemaOptionFor(uuid) {
 			if (!uuid) return null

@@ -13,8 +13,10 @@ the flag is `1`.
 - **acceptance_criteria**:
   - GIVEN the candidate libraries WHEN one is chosen THEN it is maintained, defends against XML signature wrapping, disables external entities, and `composer audit` reports no advisory for it
   - GIVEN the choice WHEN it is made THEN `design.md` D1 records the library, the version and why, in one paragraph
-- [ ] Implement
-- [ ] Test
+- [x] Implement. `onelogin/php-saml` ^4.6 (4.6.0, with `robrichards/xmlseclibs` 4.0.2 and
+      `phpseclib/phpseclib` 3.0.59); `design.md` D1 records the choice and why.
+- [x] Test. `composer audit` reports no advisory for the four new packages; the wrapping and
+      entity defences are exercised in `SamlServiceProviderAdapterTest` (task 5).
 
 ### Task 2: The `idpRegistration` schema
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-each-organisation-has-its-own-registration-per-provider-req-idpc-002`
@@ -56,8 +58,20 @@ the flag is `1`.
   - GIVEN the stub identity provider (keys generated in the test, never committed) WHEN a login runs THEN the request is signed, the response verifies, an encrypted assertion decrypts, and the normalised assertion matches what `AssertionGuard` reads
   - GIVEN a response with a bad signature, a wrapped assertion, or an external entity WHEN it is read THEN it is refused and no attribute is read
   - GIVEN the registration's `subjectMapping` WHEN attributes arrive THEN `bsn`, `pseudonym`, `kvk`, `rsin`, `branch` and `eidasPersonIdentifier` are read from the mapped names only
-- [ ] Implement
-- [ ] Test
+- [x] Implement. `SamlServiceProviderAdapter` (signed AuthnRequest over HTTP Redirect from the
+      metadata, RequestedAuthnContext from the mapping spellings at or above the floor; Response
+      verified strictly, assertion signature required, decrypted with the `decryption` credential
+      when one is named, InResponseTo required); `SamlServiceProviderAdapterFactory` and the
+      registry's built-in `saml-sp` builder. Note: `IdpLoginService` still calls `forProvider()`,
+      so a registration's adapter is reached only once the login service moves to
+      `forRegistration()`; that is the same for the OIDC adapter and outside this task.
+- [x] Test. `tests/Unit/Auth/Idp/Adapter/SamlServiceProviderAdapterTest.php` (28) with
+      `tests/Fixtures/Idp/SamlStubIdentityProvider.php` (keys generated in the test): the redirect
+      signature verifies with the SP certificate, an encrypted signed assertion decrypts and passes
+      the real `AssertionGuard`; a value changed after signing, a wrapped assertion, a DOCTYPE, an
+      unsigned assertion, another audience and another destination are refused with no attribute
+      value in the message; every subject field read from its mapped name only. Registry:
+      `IdpRegistrationServiceTest::testAReadySamlRegistrationGetsTheBuiltInSamlAdapter`.
 
 ### Task 6: The OIDC Relying Party adapter
 - **spec_ref**: `openspec/changes/portal-idp-broker-config/specs/idp-broker-configuration/spec.md#requirement-an-identity-provider-adapter-is-one-of-two-vendor-neutral-kinds-req-idpc-001`
@@ -138,6 +152,7 @@ the flag is `1`.
   - GIVEN the Newman collection WHEN run THEN it covers a SAML and an OIDC round trip through the stubs, metadata 200, 404 and 503, and RBAC on `idpRegistration`
 - [ ] Implement
 - [ ] Test
+  - STATE 26 Nov 2026: `tests/postman/idp-broker.postman_collection.json` is written and ran green twice in a row, 50/50 assertions, on a sandbox NC 34.0 with MariaDB, OpenRegister main and integriq development. It covers OIDC client metadata 200 (no `jwks_uri`, no secret), an unreadable SAML signing credential 503 that names no credential, a disabled registration, an unknown organisation, an unknown provider and a secret-based JWKS all 404 (or 429 once misses are throttled), the administrator's list and Test, and refusals for a plain user (list, Test, create, read, change; the registration is unchanged afterwards) and an anonymous caller. A Yivi SAML save is refused (422, naming the OIDC bridge). Still open, so both boxes stay unticked: the SAML and OIDC round trips through stub identity providers. This build refuses every start and callback before a live adapter is reached (see the header of `tests/e2e/idp-assurance-floor.spec.ts`).
 
 ### Task 13: Documentation and the catalogue entry
 - **spec_ref**: `openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-configuration-placement-follows-adr-017-rules-1-3-7`
@@ -146,7 +161,10 @@ the flag is `1`.
   - GIVEN the documentation page WHEN read THEN it walks an administrator through one registration per kind, says keys live in Keepiq, states the floor, and names Berichtenbox linkage as out of scope
   - GIVEN the catalogue entry WHEN opened THEN it links to *Beheer > Authenticatie* and creates no configuration of its own
 - [x] Implement
-- [ ] Test
+- [x] Test (24 Nov 2026: the docs build runs with the docs' own `ci` script, `npm ci --legacy-peer-deps
+      && npm run build`, on development d9058167: green, all 10 AI-baseline checks pass, and
+      `/docs/administrators/citizen-authentication/` is built and in the sitemap. The plain `npm ci`
+      below refuses on peer dependencies only; the lockfile itself is in sync.)
       > `docs/administrators/citizen-authentication.md` walks one SAML and one OIDC registration, says keys live in Keepiq, gives the metadata address, states the substantial floor and names Berichtenbox linkage as out of scope. The catalogue lists `adapter:digid-eherkenning-auth-adapter` (flag-gated on `idp_broker_enabled`, no source template) pointing to Beheer > Authenticatie; PHPUnit `CatalogRegistrySeedGoldenTest::testTheGovernmentLoginAdapterIsListedAndPointsToBeheer`. The docs build is not run: `docs/package-lock.json` is out of sync with `docs/package.json` on development (`npm ci` refuses), so it stays unticked.
 
 ## Not done, and named as not done

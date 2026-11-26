@@ -106,7 +106,9 @@ test.describe('GraphQL operations in the endpoint call log', () => {
 		const control = page.getByTestId('cn-logs-page-filter-graphqlOperationName')
 		await expect(control, 'the endpoint call log offers a GraphQL operation filter').toBeVisible()
 		await control.locator('input').first().click()
-		await page.getByRole('option', { name: 'zakenLijst' }).first().click()
+		// NcSelect splits a long option label over two spans (name-parts), so the
+		// accessible name is not the plain label; match the option by its text.
+		await page.getByRole('option').filter({ hasText: 'zakenLijst' }).first().click()
 
 		await expect(page).toHaveURL(/graphqlOperationName=zakenLijst/)
 		await expect(logs.getByText(`${RUN} zaakDetails`)).toHaveCount(0)

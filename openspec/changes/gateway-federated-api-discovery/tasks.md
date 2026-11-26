@@ -9,8 +9,20 @@ Kind: code. Size M. Row `integriq:gw-federated`.
 - **files**: `lib/Settings/register.d/external-api-inventory.json`, `src/manifest.json` (page `ApiInventory`), `l10n/nl.json`, `l10n/en.json`
 - **acceptance_criteria**:
   - GIVEN seeded products and two external APIs WHEN an administrator opens the inventory THEN all are listed with their gateway
-- [ ] Implement
-- [ ] Test (Playwright)
+- [x] Implement. Schema, page and menu were in place (`external-api-inventory.json`, `src/manifest.d/api-inventory.json`);
+      what was missing is integriq's own products on the page (design: `api_product` and `external_api` together).
+      Decision: one schema stays behind the page, so its gateway and vendor facets, columns and row action keep working:
+      each API product is kept as an `external_api` row on the gateway and vendor `integriq` (schema 1.2.0 adds the
+      vendor), `gatewayApiId` the product uuid, `baseUrl` the gateway's endpoint base and `gatewayUrl` the product's
+      published OpenAPI description. `EventListener/ApiProductInventory` writes it; `ApiProductInventoryListener`
+      runs it on a created or updated product and marks the row no longer seen on a retired or deleted one. A product
+      saved before this change is listed from its next save: a backfill repair step would need an info.xml version
+      bump in the same change (gate-110), which the release workflow owns. A product row has no stored document, so
+      "Bring behind integriq" is not offered on it.
+- [x] Test (Playwright): written, runs in nightly. `tests/e2e/api-inventory.spec.ts` seeds an API product next to the
+      two external APIs and expects its row with gateway `integriq` and its version, gone under the Azure filter.
+      PHPUnit: `tests/Unit/EventListener/ApiProductInventoryTest.php` (row shape, written over, retired and
+      deleted, listener scope and failure).
 
 ### Task 2: The Amazon connector waits for the broker's aws-sigv4 scheme
 - **spec_ref**: `openspec/changes/gateway-federated-api-discovery/specs/federated-api-inventory/spec.md#requirement-each-vendor-is-read-on-a-schedule-req-fedg-002`
@@ -40,7 +52,7 @@ Kind: code. Size M. Row `integriq:gw-federated`.
   - Written, not run here: `tests/e2e/api-inventory.spec.ts` (the inventory lists both gateways and filters on Azure; the row action opens the preview with the API's operations).
 
 ## Verification
-- [ ] `openspec validate gateway-federated-api-discovery --type change --strict` passes
+- [x] `openspec validate gateway-federated-api-discovery --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] PHPUnit and Playwright run, exit codes read
 
 ## Build notes (continuation)

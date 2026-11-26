@@ -34,7 +34,7 @@ use Throwable;
 /**
  * Checks an API product's published description against every enabled rule set and keeps the findings.
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 class ApiProductDesignCheck {
 
@@ -84,7 +84,7 @@ class ApiProductDesignCheck {
 	 *
 	 * @throws RuntimeException When the product is unknown or its description cannot be written.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function checkProduct(string $productId): array {
 		$options = new ObjectFindOptions(register: ApiDesignFindingStore::REGISTER, schema: 'api_product');
@@ -106,7 +106,7 @@ class ApiProductDesignCheck {
 	 *
 	 * @throws RuntimeException When the product's description cannot be written.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function check(ObjectEntity $product): array {
 		$result = $this->rules->check(
@@ -137,7 +137,7 @@ class ApiProductDesignCheck {
 	 *
 	 * @return int
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private static function rank(array $finding): int {
 		return (self::SEVERITY_ORDER[(string)($finding['severity'] ?? '')] ?? 3);
@@ -152,7 +152,7 @@ class ApiProductDesignCheck {
 	 *
 	 * @return bool True when the publisher class is not installed.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function publisherMissing(): bool {
 		return class_exists(self::PUBLISH_SERVICE) === false;
@@ -168,7 +168,7 @@ class ApiProductDesignCheck {
 	 *
 	 * @throws RuntimeException When the product's description cannot be written.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function blockingFindings(ObjectEntity $product): array {
 		return $this->rules->blockingFindings(findings: $this->check(product: $product)['findings']);
@@ -184,7 +184,7 @@ class ApiProductDesignCheck {
 	 *
 	 * @throws RuntimeException When the publish service is absent or fails.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function documentOf(ObjectEntity $product): array {
 		try {

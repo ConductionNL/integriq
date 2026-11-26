@@ -80,6 +80,7 @@
         "elasticsearch/elasticsearch": "^v9.5.0",
         "guzzlehttp/guzzle": "^8.5.5",
         "jwadhams/json-logic-php": "^1.5",
+        "onelogin/php-saml": "^4.6",
         "php-soap/ext-soap-engine": "^1.7",
         "php-soap/psr18-transport": "^1.7",
         "react/async": "^4.3",
@@ -95,7 +96,7 @@
         "symfony/uid": "^6.4",
         "symfony/var-exporter": "^7.2.5",
         "symfony/yaml": "^6.4.40",
-        "twig/twig": "^3.27.0",
+        "twig/twig": "^3.31.1",
         "web-token/jwt-library": "^4.2.1"
     },
     "require-dev": {

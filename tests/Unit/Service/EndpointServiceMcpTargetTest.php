@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -59,7 +59,7 @@ use ReflectionMethod;
 /**
  * An mcp endpoint relays to its tool server; an api endpoint is unchanged; a refused caller reaches nothing.
  *
- * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
  */
 class EndpointServiceMcpTargetTest extends TestCase {
 
@@ -124,9 +124,22 @@ class EndpointServiceMcpTargetTest extends TestCase {
 		});
 		$response->callback($output);
 
-		$this->assertSame([['relay', '/mcp', 'POST']], $this->calls);
+		// The source location ends in a slash, so the path goes without one: https://tools.internal/mcp.
+		$this->assertSame(expected: [['relay', 'mcp', 'POST']], actual: $this->calls);
 		$this->assertContains('Mcp-Session-Id: sess-9', $headers);
 	}//end testAnMcpEndpointRelaysToItsToolServer()
+
+	/**
+	 * An mcp endpoint published under its own path reaches the tool server's `upstreamPath`, as an api endpoint does.
+	 *
+	 * @return void
+	 */
+	public function testAnMcpEndpointReachesItsUpstreamPath(): void {
+		$response = $this->dispatch(targetType: 'mcp', ruleResult: [], endpointExtra: ['endpoint' => 'tools/documents', 'upstreamPath' => 'mcp']);
+		$response->callback($this->createMock(originalClassName: IOutput::class));
+
+		$this->assertSame(expected: [['relay', 'mcp', 'POST']], actual: $this->calls);
+	}//end testAnMcpEndpointReachesItsUpstreamPath()
 
 	/**
 	 * An api endpoint still takes the buffered path.
@@ -157,13 +170,14 @@ class EndpointServiceMcpTargetTest extends TestCase {
 	 *
 	 * @param string             $targetType The endpoint's target type.
 	 * @param array|JSONResponse $ruleResult What the before rules answered.
+	 * @param array              $endpointExtra More endpoint fields.
 	 *
 	 * @return Response The answer.
 	 */
-	private function dispatch(string $targetType, array|JSONResponse $ruleResult): Response {
+	private function dispatch(string $targetType, array|JSONResponse $ruleResult, array $endpointExtra = []): Response {
 		$endpoint = ObjectServiceMockBuilder::objectEntity(
 			$this,
-			['targetType' => $targetType, 'targetId' => 'src-tools', 'endpoint' => '/mcp'],
+			['targetType' => $targetType, 'targetId' => 'src-tools', 'endpoint' => '/mcp'] + $endpointExtra,
 			'endpoint-mcp'
 		);
 		$request = $this->createMock(IRequest::class);

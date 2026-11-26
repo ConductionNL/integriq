@@ -14,8 +14,8 @@
   product's approval. Each application's API keys are managed by
   CredentialKeysPanel over /api/portal/applications/{id}/keys.
 
-  @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
-  @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+  @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+  @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 -->
 <template>
 	<div class="developerPortal" data-testid="developer-portal">
@@ -157,7 +157,7 @@ export default {
 	computed: {
 		/**
 		 * @return {Array<object>} The products as select options.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		productOptions() {
 			return productOptionsOf(this.products)
@@ -175,7 +175,7 @@ export default {
 		/**
 		 * @param {object|null} option The chosen product option.
 		 * @return {Array<string>} Its tier names.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		tierOptions(option) {
 			return tierNamesOf(this.products.find((product) => product.id === option?.id))
@@ -184,7 +184,7 @@ export default {
 		/**
 		 * @param {object} product A product.
 		 * @return {string} Its tiers, approval-gated ones marked.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
 		 */
 		tierText(product) {
 			return (product.tiers || [])
@@ -195,7 +195,7 @@ export default {
 		/**
 		 * @param {object} product A deprecated product.
 		 * @return {string} The deprecation line.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
 		 */
 		deprecationText(product) {
 			if (product.sunsetDate) {
@@ -207,7 +207,7 @@ export default {
 		/**
 		 * @param {string} id A product id.
 		 * @return {string} Its name, or the id.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		productName(id) {
 			return this.products.find((product) => product.id === id)?.name || id
@@ -216,7 +216,7 @@ export default {
 		/**
 		 * @param {string} status A subscription status.
 		 * @return {string} Its label.
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		statusLabel(status) {
 			return subscriptionStatusLabel(status)
@@ -226,7 +226,7 @@ export default {
 		 * Read the products and the developer's applications.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
 		 */
 		async load() {
 			this.loading = true
@@ -248,7 +248,7 @@ export default {
 		/**
 		 * @param {Array<object>} applications The applications.
 		 * @return {void}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		setApplications(applications) {
 			const requests = {}
@@ -263,7 +263,7 @@ export default {
 		 * Create an application the developer owns.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		async createApplication() {
 			const name = this.newName.trim()
@@ -288,7 +288,7 @@ export default {
 		 *
 		 * @param {object} application The application.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+		 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 		 */
 		async requestAccess(application) {
 			const request = this.requests[application.id]

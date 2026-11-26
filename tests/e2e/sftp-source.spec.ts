@@ -40,6 +40,10 @@ import { expect, test } from '@playwright/test'
 import { expectRouteMatched, gotoAppRoute } from './support/appRoot.ts'
 
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
+
+// CnBodySections sets its own data-testid on a body widget's root element,
+// which replaces SourceHostKeyPanel's `source-host-key-panel`.
+const PANEL = 'cn-body-section-component-src-host-key'
 const HEADERS = { 'OCS-APIRequest': 'true' }
 
 /** One run's marker, so reruns never meet each other's objects. */
@@ -100,7 +104,7 @@ function sftpSource(name: string, location: string, pin: string): Record<string,
 async function openHostKeyPanel(page: Page, id: string): Promise<Locator> {
 	await gotoAppRoute(page, `/sources/${id}`)
 	await expectRouteMatched(page, `/sources/${id}`)
-	const panel = page.getByTestId('source-host-key-panel')
+	const panel = page.getByTestId(PANEL)
 	await expect(panel, 'an SFTP source shows its host key panel').toBeVisible({ timeout: 30_000 })
 
 	return panel
@@ -179,6 +183,6 @@ test.describe('sources-sftp-adapter: pinning a partner server\'s host key', () =
 		await gotoAppRoute(page, `/sources/${ids.api}`)
 		await expectRouteMatched(page, `/sources/${ids.api}`)
 		await expect(page.getByText(`E2E api ${RUN}`).first()).toBeVisible({ timeout: 30_000 })
-		await expect(page.getByTestId('source-host-key-panel')).toHaveCount(0)
+		await expect(page.getByTestId(PANEL)).toHaveCount(0)
 	})
 })

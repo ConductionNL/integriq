@@ -142,7 +142,7 @@ class DeliveryRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function testAnUnknownSuppressionIsRefusedAndNothingIsSent(): void {
 		$this->eventService->expects($this->never())->method('ingestDeliveryRequest');
@@ -167,7 +167,7 @@ class DeliveryRequestedListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function testADecisionIsResolvedBeforeTheIngest(): void {
 		$eventEntity = ObjectServiceMockBuilder::objectEntity($this, ['type' => 'nl.conduction.delivery.requested'], 'evt-2');

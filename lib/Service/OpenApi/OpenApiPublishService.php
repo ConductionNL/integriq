@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -39,7 +39,7 @@ use Throwable;
  * stored (decision D3). Only the gateway path is published: a source's location
  * never appears, not even inside a schema copied from a vendor document.
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -127,7 +127,7 @@ class OpenApiPublishService {
 	 *
 	 * @return array<string,mixed> The OpenAPI 3.1 document.
 	 *
-	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
 	 */
 	public function gatewayDocument(string $serverUrl, string $version): array {
 		$endpointIds = [];
@@ -156,7 +156,7 @@ class OpenApiPublishService {
 	 *
 	 * @return array<string,mixed> The OpenAPI 3.1 document.
 	 *
-	 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
 	 */
 	public function productDocument(ObjectEntity $product, string $serverUrl): array {
 		$data = $product->getObject();
@@ -260,6 +260,10 @@ class OpenApiPublishService {
 		}
 
 		[$path, $pathParameters] = self::templatedPath(segments: $segments);
+		if (self::endsWithSlash(data: $data) === true) {
+			$path .= '/';
+		}
+
 		$operation = $this->operationFor(document: $document, data: $data, pathParameters: $pathParameters);
 		$operation = self::named(operation: $operation, data: $data, uuid: (string) $endpoint->getUuid());
 
@@ -292,6 +296,30 @@ class OpenApiPublishService {
 
 		return $segments;
 	}//end segmentsOf()
+
+	/**
+	 * Whether the endpoint is routed with a trailing slash.
+	 *
+	 * The gateway's route regex is built from the endpoint path as written, so `x/besluiten/`
+	 * is served only at `x/besluiten/`. The published path must say so, or the description
+	 * names a URI the gateway does not answer and `/core/no-trailing-slash` can never fire.
+	 *
+	 * @param array<string,mixed> $data The endpoint's data.
+	 *
+	 * @return bool True when the endpoint path, or its endpointArray, ends in an empty segment.
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+	 */
+	private static function endsWithSlash(array $data): bool {
+		$endpoint = (string) ($data['endpoint'] ?? '');
+		if (trim($endpoint, '/') !== '') {
+			return str_ends_with($endpoint, '/');
+		}
+
+		$array = array_values((array) ($data['endpointArray'] ?? []));
+
+		return count($array) > 1 && $array[(count($array) - 1)] === '';
+	}//end endsWithSlash()
 
 	/**
 	 * The OpenAPI path of route segments, with `{x}` and `{{x}}` placeholders as path parameters.

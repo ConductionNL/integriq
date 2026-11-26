@@ -32,7 +32,7 @@
  *
  * @link https://Integriq.app
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -88,7 +88,7 @@ final class RecipientDecision {
 	 *
 	 * @return string[] The addresses, in order, without duplicates.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+	 * @spec openspec/specs/message-recipient-selection/spec.md
 	 */
 	public function forTransport(): array {
 		$suppressed = [];
@@ -114,7 +114,7 @@ final class RecipientDecision {
 	 *
 	 * @return array<string, mixed> The record.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+	 * @spec openspec/specs/message-recipient-selection/spec.md
 	 */
 	public function asRecord(): array {
 		return [

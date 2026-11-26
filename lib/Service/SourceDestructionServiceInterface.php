@@ -27,6 +27,14 @@ namespace OCA\Integriq\Service;
  */
 interface SourceDestructionServiceInterface {
 	/**
+	 * The outcome when a notice arrives without a user and the synchronization
+	 * has no owner that still exists: nothing is acted on.
+	 *
+	 * @spec openspec/changes/synchronisation-source-destruction-purge/specs/synchronization-engine/spec.md#requirement-a-destruction-notice-purges-one-object-without-a-full-run-req-sdp-002
+	 */
+	public const OUTCOME_NO_OWNER = 'no_owner';
+
+	/**
 	 * Apply a ZGW destroy notification to every synchronization of the source it arrived for.
 	 *
 	 * The contract's `originId` is either the resource URL itself or its last

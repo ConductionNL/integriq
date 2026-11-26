@@ -1,0 +1,499 @@
+{
+	"info": {
+		"name": "Integriq — consumer API key hashed by the repair step (access-consumer-credentials)",
+		"description": "Newman test of task 1 and the verification of openspec/changes/access-consumer-credentials (REQ-CRED-001). Folder 1 creates a consumer whose API key is stored in plaintext (authorizationType apiKey) and an endpoint whose apikey rule has no keys of its own, so it falls through to integriq's consumers, and calls it with that key. Then run the repair step (`occ maintenance:repair`, which runs HashConsumerApiKeys). Folder 2 calls the endpoint with the same old key (still passes), reads the credentials route (one entry labelled `migrated`, no key, no hash) and reads every consumer over the OpenRegister object API (no API key, no secret hash, no credentials list). Folder 9 deletes what folder 1 made.\n\nRun the folders separately and carry the environment between them:\n\n  newman run <this> -e tests/postman/integriq.postman_environment.json --folder '1. Before the repair (setup via OpenRegister)' --export-environment /tmp/rk.json\n  php occ maintenance:repair\n  newman run <this> -e /tmp/rk.json --folder '2. After the repair (run occ maintenance:repair between the folders)' --folder '9. Teardown (via OpenRegister)'",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "ocBase",
+			"value": "{{base_url}}/index.php/apps/integriq/api"
+		},
+		{
+			"key": "orBase",
+			"value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Nextcloud's CSRF check refuses a basic-auth call that also carries the session cookie Newman keeps.",
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' })"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "1. Before the repair (setup via OpenRegister)",
+			"item": [
+				{
+					"name": "RK.1 a consumer with a plaintext API key",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{orBase}}/consumer",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"consumer"
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"newman-repair-key-consumer\", \"description\": \"Newman: plaintext key moved into a hashed credential\", \"authorizationType\": \"apiKey\", \"authorizationConfiguration\": {\"apiKey\": \"{{repairKey}}\"}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// A fresh key per run, so a key left by an earlier run never passes.",
+									"pm.environment.set('repairKey', 'repair-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+									"pm.environment.set('repairConsumerUuid', id);",
+									"pm.test('the key is not answered back', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('repairKey')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.2 a rule that accepts any consumer's API key",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{orBase}}/rule",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"rule"
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"newman-repair-key-auth\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"apikey\", \"header\": \"X-Api-Key\", \"keys\": {}}}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+									"pm.environment.set('repairRuleUuid', id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.3 an endpoint behind the rule",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{orBase}}/endpoint",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"endpoint"
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"newman-repair-key-endpoint\", \"endpoint\": \"repair-key-newman\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{repairRuleUuid}}\"]}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+									"pm.environment.set('repairEndpointUuid', id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.4 the plaintext key passes before the repair",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/endpoint/repair-key-newman",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"endpoint",
+								"repair-key-newman"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Api-Key",
+								"value": "{{repairKey}}"
+							}
+						],
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('not refused by authentication', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. After the repair (run occ maintenance:repair between the folders)",
+			"item": [
+				{
+					"name": "RK.5 the old key still passes after the repair",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/endpoint/repair-key-newman",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"endpoint",
+								"repair-key-newman"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Api-Key",
+								"value": "{{repairKey}}"
+							}
+						],
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('not refused by authentication', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.6 the consumer holds one migrated credential, listed without key or hash",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/consumers/{{repairConsumerUuid}}/credentials",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"consumers",
+								"{{repairConsumerUuid}}",
+								"credentials"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"const r = pm.response.json().results || [];",
+									"pm.test('one credential labelled migrated', () => { pm.expect(r.length).to.eql(1); pm.expect(r[0].label).to.eql('migrated'); pm.expect(r[0].type).to.eql('apiKey'); });",
+									"pm.test('no key and no hash in the list', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('repairKey')); pm.expect(t).to.not.include('keyHash'); });",
+									"pm.test('the prefix is the start of the old key', () => pm.expect(pm.environment.get('repairKey').startsWith(r[0].keyPrefix)).to.be.true);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.7 the plaintext key is gone from the consumer",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{orBase}}/consumer/{{repairConsumerUuid}}?_render=false",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"consumer",
+								"{{repairConsumerUuid}}?_render=false"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"pm.test('neither the key nor its hash is answered', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('repairKey')); pm.expect(t).to.not.include('keyHash'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.8 a read of every consumer shows no key and no hash",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{orBase}}/consumer?_limit=1000",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"consumer?_limit=1000"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"const rows = pm.response.json().results || [];",
+									"pm.test('at least the test consumer is listed', () => pm.expect(rows.length).to.be.above(0));",
+									"const leaks = rows.filter(c => { const a = c.authorizationConfiguration || {}; return (typeof a.apiKey === 'string' && a.apiKey !== '') || (typeof a.clientSecretHash === 'string' && a.clientSecretHash !== '') || (c.credentials !== undefined && c.credentials !== null); });",
+									"pm.test('no consumer carries an API key, a secret hash or its credentials list', () => pm.expect(leaks.map(c => c.id || c.uuid || c.name)).to.eql([]));",
+									"pm.test('no keyHash anywhere in the answer', () => pm.expect(pm.response.text()).to.not.include('keyHash'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.9 a wrong key is still refused",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/endpoint/repair-key-newman",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"endpoint",
+								"repair-key-newman"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Api-Key",
+								"value": "not-the-key"
+							}
+						],
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "9. Teardown (via OpenRegister)",
+			"item": [
+				{
+					"name": "RK.10 cleanup — DELETE endpoint",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/endpoint/{{repairEndpointUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"endpoint",
+								"{{repairEndpointUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.11 cleanup — DELETE rule",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/rule/{{repairRuleUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"rule",
+								"{{repairRuleUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "RK.12 cleanup — DELETE consumer",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/consumer/{{repairConsumerUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"consumer",
+								"{{repairConsumerUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md
+ * @spec openspec/specs/synced-from-tab/spec.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -37,7 +37,7 @@ use OCA\Integriq\Tests\Support\LegacyObjectArgs;
 /**
  * 400 without the three parameters, 404 for a record outside the caller's rights, the provenance otherwise.
  *
- * @spec openspec/changes/record-provenance-tab/specs/synchronization/spec.md#requirement-a-record-says-where-it-was-synchronized-from
+ * @spec openspec/specs/synced-from-tab/spec.md#requirement-a-record-says-where-it-was-synchronized-from
  */
 final class RecordProvenanceControllerTest extends TestCase {
 

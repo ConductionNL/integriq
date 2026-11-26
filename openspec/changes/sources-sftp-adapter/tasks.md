@@ -20,6 +20,7 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   - GIVEN a path with .. WHEN any operation is called THEN it is refused
 - [x] Implement
 - [ ] Test (PHPUnit against an SFTP container and an FTPS container in the dev compose)
+  > 2026-11-26, live FTPS attempt (vsftpd 3.0.5 with explicit TLS on loopback, certificate from a CA in the system trust, password through an inject-only broker credential): the TLS login succeeds, but every test run and run fails with 'The FTPS server 127.0.0.1 refused the request for "/exchange/outbox/": RETR response: 500'. `FtpsSession::listFiles()` lists with `MLSD` (RFC 3659), which vsftpd does not implement, so a pickup against a vsftpd partner cannot list anything. A fallback to `LIST` (or `NLST` with `MDTM`/`SIZE`) when `MLSD` answers 500 is still to be built; the SFTP half passed live (task 3).
 
 ### Task 3: The pickup synchronization
 - **spec_ref**: `openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-new-files-are-picked-up-and-archived-after-a-safe-local-write-req-sftp-002`
@@ -28,7 +29,11 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   - GIVEN three new CSV files WHEN the pickup runs THEN three files are in the Nextcloud folder and moved to the remote archive, and a second run fetches nothing
   - GIVEN a failed local write WHEN the pickup runs THEN the remote file stays where it was
 - [x] Implement
-- [ ] Test (PHPUnit; one run against the SFTP container)
+- [x] Test (PHPUnit; one run against the SFTP container)
+  > 2026-11-26, live against a real SFTP server (OpenSSH `internal-sftp` on loopback, password sign-in through an inject-only, organisation-scope broker credential, host key pinned as `SHA256:...`, loopback allowed through `egress_allowed_hosts`). Sandbox: Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d.
+  > - A pickup synchronization (`outbox`, `*.csv`, `target: files`, `after: move`, `archivePath: archive`) test run lists the three new CSV files and changes nothing.
+  > - The first run stores all three in `Partner/inbox` and moves each to the remote `archive` (`after: moved`). The second run picks up nothing. The stored files are byte-identical to the archived ones.
+  > - Found and fixed by the run: Nextcloud's `Folder::newFile()` closes the stream it is given, and `FilePickup` closed it again in `finally`. On PHP 8 that throws a TypeError after the write, so the run answered 500 with the file stored but not archived or remembered, and every run stored it again (`export-1 (2).csv`, `export-1 (3).csv`). Fixed by closing only a stream still open. Tested by `FilePickupTest::testAStoreThatClosesTheStreamStillArchivesTheFile`, which errors without the fix. `RemoteFiles` PHPUnit 60/60.
 - **note on what is built**: `FilePickup` (the pickup itself) and
   `FilePickupSynchronization`, which `SynchronizationService` runs for a
   synchronization whose `sourceType` is `sftp` or `ftps`, instead of fetching
@@ -55,7 +60,7 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 - **acceptance_criteria**:
   - GIVEN a new SFTP source WHEN the administrator tests it the first time THEN the server's fingerprint is shown for confirmation
 - [x] Implement
-- [ ] Test (Playwright)
+- [x] Test (Playwright): run live 25 Nov 2026 on NC 34 + MariaDB, `tests/e2e/sftp-source.spec.ts` 4/4. The run found an unreachable server answered 500, not 502: phpseclib's connection exception is now a RemoteFileException.
 - **note**: the seed has a dormant `example-sftp-partner` source and a
   `status: disabled` pickup `example-sftp-pickup` for `*.csv`, archiving to
   `processed`. The docs are `docs/features/sftp-ftps-file-pickup.md`. A first
@@ -68,6 +73,6 @@ Kind: code. Size M. Row `integriq:src-sftp`.
   endpoints are admin-only.
 
 ## Verification
-- [ ] `openspec validate sources-sftp-adapter --type change --strict` passes
+- [x] `openspec validate sources-sftp-adapter --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [ ] No TimedJob class added (REQ-DIC-005)
 - [ ] PHPUnit and Playwright run, exit codes read

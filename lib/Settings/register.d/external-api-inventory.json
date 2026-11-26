@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Task 1, REQ-FEDG-001). The external_api schema the three discovery fragments (kong-gateway-discovery.json, azure-apim-discovery.json, aws-apigateway-discovery.json) write into, and two example APIs from the Kong fixture so the inventory page is not empty on a demo install. Admin-only: an inventory of another gateway's APIs is operator information.",
+  "$comment": "ADR-037 register fragment (gateway-federated-api-discovery Task 1, REQ-FEDG-001). The external_api schema the three discovery fragments (kong-gateway-discovery.json, azure-apim-discovery.json, aws-apigateway-discovery.json) write into, and two example APIs from the Kong fixture so the inventory page is not empty on a demo install. Admin-only: an inventory of another gateway's APIs is operator information. 1.2.0 adds the vendor `integriq`: ApiProductInventory writes one row per integriq API product (gateway and vendor `integriq`, gatewayApiId the product uuid), through ApiProductInventoryListener, when the product is saved, and marks it no longer seen when the product is retired or deleted, so the page lists integriq's own products with the discovered APIs. A product saved before 1.2.0 is listed from its next save.",
   "components": {
     "registers": {
       "integriq": {
@@ -13,7 +13,7 @@
         "slug": "external_api",
         "title": "External API",
         "icon": "ApiOff",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "summary": "An API found on another vendor's gateway, listed next to integriq's own API products",
         "description": "One row per API a discovery synchronization found on a Kong, Azure API Management or Amazon API Gateway instance (gateway-federated-api-discovery REQ-FEDG-001). Written by the synchronization engine, never by hand: `gatewayApiId` is the vendor's own id and the synchronization's origin id. An API the vendor no longer returns is not deleted: the synchronization's `markEnded` disappearance policy writes `sourceEndedAt`, so the inventory shows it as no longer seen (REQ-FEDG-002).",
         "required": [
@@ -50,7 +50,8 @@
             "enum": [
               "kong",
               "azure-apim",
-              "aws-apigateway"
+              "aws-apigateway",
+              "integriq"
             ],
             "description": "The gateway product",
             "facetable": true

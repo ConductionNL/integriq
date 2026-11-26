@@ -307,7 +307,7 @@ class LtiController extends Controller {
 				accessToken: $token,
 				deploymentUuid: $deployment,
 				lineItemId: $lineItemId,
-				scorePayload: $this->request->getParams()
+				scorePayload: $this->scorePayload()
 			);
 		} catch (LtiValidationException $exception) {
 			return $this->renderRejection(exception: $exception);
@@ -315,6 +315,19 @@ class LtiController extends Controller {
 
 		return new JSONResponse(data: $result);
 	}//end agsScore()
+
+	/**
+	 * The tool's score: the request parameters without the ones Nextcloud's
+	 * router adds (`_route` and the URL's `deployment` and `lineItemId`), which
+	 * would otherwise be stored inside the score of the CloudEvent.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/connectors-lti-platform-launch/specs/lti-platform/spec.md#requirement-a-launched-tool-can-send-a-grade-back-to-the-placement-req-ltil-003
+	 */
+	private function scorePayload(): array {
+		return array_diff_key($this->request->getParams(), ['_route' => true, 'deployment' => true, 'lineItemId' => true]);
+	}//end scorePayload()
 
 	/**
 	 * Inbound AGS line-item scope check (thin — line-item storage/CRUD is

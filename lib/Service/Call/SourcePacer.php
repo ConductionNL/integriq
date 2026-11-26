@@ -46,7 +46,7 @@ use OCP\IMemcache;
  * `pace.maxBackgroundWaitSeconds` (default 900). A longer wait is refused
  * with the seconds until the call's turn, and nothing is reserved.
  *
- * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+ * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
  */
 class SourcePacer {
 
@@ -111,7 +111,7 @@ class SourcePacer {
 	 *
 	 * @return bool True when shared.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function isShared(): bool {
 		return $this->shared !== null;
@@ -125,7 +125,7 @@ class SourcePacer {
 	 *
 	 * @return bool True when calls to it are paced.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function isPaced(array $sourceData): bool {
 		return $this->configuredIntervalMicros(pace: $this->paceOf(sourceData: $sourceData)) > 0
@@ -144,7 +144,7 @@ class SourcePacer {
 	 *
 	 * @return PacingDecision|null The decision, or null when the source is not paced.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function turn(string $sourceKey, array $sourceData, bool $live): ?PacingDecision {
 		if ($this->isPaced(sourceData: $sourceData) === false) {
@@ -166,7 +166,7 @@ class SourcePacer {
 	 *
 	 * @return PacingDecision The wait, or a refusal with the seconds until the call's turn.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	public function acquire(string $sourceKey, array $sourceData, bool $live): PacingDecision {
 		$pace = $this->paceOf(sourceData: $sourceData);
@@ -226,7 +226,7 @@ class SourcePacer {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-calls-to-a-source-are-spaced-to-stay-under-its-limit-req-rlpc-001
 	 */
 	public function wait(PacingDecision $decision): void {
 		if ($decision->refused === false && $decision->waitMicros > 0) {

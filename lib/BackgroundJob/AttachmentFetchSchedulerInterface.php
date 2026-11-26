@@ -35,7 +35,7 @@ interface AttachmentFetchSchedulerInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
 	 */
 	public function scheduleFetch(?string $requestUuid, string $actingUserId): void;
 }

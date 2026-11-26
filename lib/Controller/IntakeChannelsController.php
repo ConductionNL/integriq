@@ -196,6 +196,37 @@ class IntakeChannelsController extends Controller {
 	}//end channels()
 
 	/**
+	 * What the signed-in user may do from the intake inbox.
+	 *
+	 * The inbox shows its Assign and Reply row actions only to a handler with
+	 * the matching action right, so a reader without it never sees an action
+	 * the server would refuse. The routes check the right again.
+	 *
+	 * @return JSONResponse `{assign: bool, reply: bool}`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/intake-channels-beyond-mail/specs/intake-channels/spec.md#requirement-a-handler-works-a-message-from-the-shared-inbox-req-ic-021
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function rights(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => $this->l->t('Not authenticated')], Http::STATUS_UNAUTHORIZED);
+		}
+
+		return new JSONResponse(
+			[
+				'assign' => $this->actionAuth->can(user: $user, action: self::ACTION_ASSIGN),
+				'reply' => $this->actionAuth->can(user: $user, action: self::ACTION_REPLY),
+			]
+		);
+
+	}//end rights()
+
+	/**
 	 * Save one routing rule, refusing a mapping the case type cannot hold.
 	 *
 	 * @param string $id The rule id when updating, empty when creating.

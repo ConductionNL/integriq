@@ -33,7 +33,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
+ * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use Throwable;
 /**
  * Fetches the pending bijlagen of one dso_verzoek and stores them as object files.
  *
- * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
+ * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
 class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 
@@ -119,7 +119,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	 * @return array<int, array<string, mixed>>|null The request's attachments afterwards,
 	 *                                               or null when the request does not exist.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
 	 */
 	public function fetchPending(string $requestUuid): ?array {
 		$request = $this->objectService->find(
@@ -182,7 +182,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	 *
 	 * @return array<string, mixed> The entry with its new status, attempts, fileId or error.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 */
 	public function fetchOne(
 		ObjectEntity $request,
@@ -342,7 +342,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	 *
 	 * @return boolean True when the entry should be fetched.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-a-rerun-finishes-what-a-crash-left
 	 */
 	public function needsDownload(mixed $entry): bool {
 		if (is_array($entry) === false) {
@@ -364,7 +364,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 */
 	protected function pause(int $seconds): void {
 		sleep($seconds);
@@ -398,7 +398,7 @@ class DsoAttachmentFetcher implements RequestAttachmentFetcherInterface {
 	 *
 	 * @return boolean True when a bijlage is missing.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 */
 	public function isAttachmentMissing(array $attachments): bool {
 		foreach ($attachments as $entry) {

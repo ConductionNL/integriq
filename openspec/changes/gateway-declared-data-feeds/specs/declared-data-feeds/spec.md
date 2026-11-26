@@ -12,6 +12,13 @@ Integriq MUST read `lib/Settings/feeds.json` from every enabled app on install, 
 - THEN four feed endpoints and the API product `shillinq data feeds` exist, and the Feeds page lists them
 - e2e: `tests/e2e/feeds-page.spec.ts`
 
+#### Scenario: a generated feed product starts as draft
+- GIVEN shillinq declares feeds and no `shillinq data feeds` product exists yet
+- WHEN integriq syncs declarations
+- THEN the product is created with status `draft`, so the API design check (REQ-ADRC-003) does not refuse the sync, and the endpoints are served
+- AND an administrator makes it active from the product page once its design findings are fixed or waived; a later sync keeps that status
+- @e2e exclude declaration sync; covered by PHPUnit
+
 #### Scenario: a declared field does not exist
 - GIVEN a dataset listing a field the schema does not declare
 - WHEN integriq syncs

@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ class ProductSubscriptionService {
 	 * @param OrObjectService          $orObjectService OpenRegister's object service.
 	 * @param IL10N                    $l               Translates the refusals.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
 	 */
 	public function __construct(
 		private readonly ApprovalServiceInterface $approvalService,
@@ -86,7 +86,7 @@ class ProductSubscriptionService {
 	 *
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-consumer-subscribes-to-an-api-product-at-a-tier-req-apg-003
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */

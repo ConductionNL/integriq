@@ -39,8 +39,10 @@ object, portaliq, wave 2. The channel half waits on nothing.
 
 ### Task 6: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalogue entries, this change's row in `competitor-parity-2026-09`
-- [ ] Tell dossiq that `case.intakeChannel` can be written from the channel that delivered the message, beside the form's own channel from buildiq's `forms-per-case-type`
+- [x] Tell dossiq that `case.intakeChannel` can be written from the channel that delivered the message, beside the form's own channel from buildiq's `forms-per-case-type`
+  > 2026-11-26: handed over in the lanes' handoff log (builders-idle.md, live-integriq-1, "FOR b-dossiq"), naming the integriq side it builds on.
 - [ ] Ask the portaliq lane, cluster 51, for the form definition a submission mapping names, and agree what happens when it is missing
+  > 2026-11-26: asked (COORDINATOR-QUEUE.md, live-integriq-1) with three options and a recommendation: hold the submission unmapped and visible as 'form definition missing', write no case. Open until the portaliq lane answers.
 - [x] Record C-intake-4 as belonging to the Nextcloud platform programme under D9, and C-intake-12 and C-tasks-and-phases-31 as a product decision with documented passers only under D21
 - [x] Test (`tests/e2e/intake-channels.spec.ts`, `openspec validate intake-channels-beyond-mail --type change --strict`)
 
@@ -50,9 +52,9 @@ object, portaliq, wave 2. The channel half waits on nothing.
 - **acceptance_criteria**:
   - GIVEN a held message WHEN a handler assigns it to a case THEN it is linked with its attachments and the assigner is recorded
   - GIVEN a message from a channel that can reply WHEN a handler replies from the inbox THEN `IntakeReplyService::reply()` sends it on that channel
-- [ ] Implement (rows `msg-shared-inbox`, `msg-reply-channel`)
+- [x] Implement (rows `msg-shared-inbox`, `msg-reply-channel`)
   - Done: `POST /api/intake/messages/{id}/assign` behind the new `intake.assign` action right (`IntakeChannelsController::assign()`), `IntakeAssignmentService` (a held, routed or assigned message gets `status: assigned`, `targetRef`, `assignedBy`, `assignedAt`; the owning app is handed the message and its attachments through `IntakeMessageAssignedEvent`), the `intake_message` schema 1.2.0 fields, and the inbox's Case and Assigned by columns. The reply route already existed.
-  - Open: the two row actions on the inbox. The page is `type: logs`, which declares no row actions, and the app shell passes no ADR-023 action rights to the manifest, so a row action cannot yet be hidden from a reader without the right (REQ-IC-021 scenario 3).
-- [ ] Test (PHPUnit for the assign route; Playwright for the two row actions)
-  - Done: PHPUnit `IntakeChannelsControllerAssignTest` and `IntakeAssignmentServiceTest`. Open: Playwright for the row actions.
+  - The two row actions (2026-11-25): the inbox's `row-actions` slot (`IntakeMessageRowActions.vue`) offers "Assign to case" on a held or routed message and "Reply" on a message whose channel can reply (`canReply` from `GET /api/intake/channels`). Each opens a dialog, posts to its route and reloads the inbox. Without an app-shell feed of action rights, the slot asks `GET /api/intake/messages/rights` once per page load. That route answers the ADR-023 gate's `can()` for `intake.assign` and `intake.reply`, so a reader without the right sees neither action, and the routes still refuse them with 403. Strings in `l10n/en.json` and `l10n/nl.json` ("Toewijzen aan zaak", "Beantwoorden"), rebuilt into the `.js` catalogues.
+- [x] Test (PHPUnit for the assign route; Playwright for the two row actions) — Playwright written, runs in nightly
+  - Done: PHPUnit `IntakeChannelsControllerAssignTest`, `IntakeAssignmentServiceTest` and `IntakeChannelsControllerRightsTest`; vitest `intakeInboxActions.spec.js` (who sees which action, the two posts, the refusals). Written, not run here (it needs a live instance): the three REQ-IC-021 scenarios in `tests/e2e/intake-channels.spec.ts`.
 

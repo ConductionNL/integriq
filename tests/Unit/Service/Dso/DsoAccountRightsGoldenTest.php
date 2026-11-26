@@ -25,10 +25,13 @@ declare(strict_types=1);
 namespace OCA\Integriq\Tests\Unit\Service\Dso;
 
 use OCA\Integriq\Service\Dso\DsoAccountRights;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
@@ -161,4 +164,80 @@ class DsoAccountRightsGoldenTest extends TestCase {
 
 		$this->assertSame(file_get_contents($path), $actual);
 	}//end testGoldenRecord()
+
+	/**
+	 * The asks the handler received.
+	 *
+	 * @var list<PermissionAsk>
+	 */
+	private array $asks = [];
+
+	/**
+	 * Build the rights check over a handler with OpenRegister main's signature,
+	 * hasPermission(PermissionAsk). Against it the old named-argument call raised
+	 * "Unknown named parameter $schema", so every DSO push answered 503.
+	 *
+	 * @param list<string> $granted The actions the handler grants.
+	 *
+	 * @return DsoAccountRights
+	 */
+	private function askRights(array $granted): DsoAccountRights {
+		$schema       = new Schema();
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemaMapper->method('find')->willReturn($schema);
+
+		$asks    = &$this->asks;
+		$handler = new class($asks, $granted) {
+			/**
+			 * @param list<PermissionAsk> $asks    The shared record.
+			 * @param list<string>        $granted The granted actions.
+			 */
+			public function __construct(private array &$asks, private readonly array $granted) {
+			}
+
+			/**
+			 * OpenRegister main's signature.
+			 *
+			 * @param PermissionAsk $ask   The question.
+			 * @param bool          $_rbac Whether RBAC applies.
+			 *
+			 * @return bool
+			 */
+			public function hasPermission(PermissionAsk $ask, bool $_rbac = true): bool {
+				$this->asks[] = $ask;
+				return in_array($ask->action, $this->granted, true);
+			}
+		};
+
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturn($handler);
+
+		return new DsoAccountRights(schemaMapper: $schemaMapper, container: $container, logger: new NullLogger());
+	}//end askRights()
+
+	/**
+	 * Each action is asked as one PermissionAsk carrying the account's uid.
+	 *
+	 * @return void
+	 */
+	public function testAsksOnePermissionAskPerActionForTheAccount(): void {
+		$missing = $this->askRights(granted: ['read', 'create'])->missing(userId: 'svc-dso', actions: ['read', 'create', 'update']);
+
+		$this->assertSame(expected: ['update'], actual: $missing);
+		$this->assertCount(expectedCount: 3, haystack: $this->asks);
+		$this->assertSame(expected: ['read', 'create', 'update'], actual: array_map(static fn (PermissionAsk $ask): string => $ask->action, $this->asks));
+		foreach ($this->asks as $ask) {
+			$this->assertSame(expected: 'svc-dso', actual: $ask->userId);
+			$this->assertNull(actual: $ask->objectOwner);
+		}
+	}//end testAsksOnePermissionAskPerActionForTheAccount()
+
+	/**
+	 * All actions held answers an empty list, not null.
+	 *
+	 * @return void
+	 */
+	public function testAllHeldIsAnEmptyList(): void {
+		$this->assertSame(expected: [], actual: $this->askRights(granted: ['read', 'create'])->missing(userId: 'svc-dso', actions: ['read', 'create']));
+	}//end testAllHeldIsAnEmptyList()
 }//end class

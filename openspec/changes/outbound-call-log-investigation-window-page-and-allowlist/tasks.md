@@ -39,6 +39,6 @@ The building agent follows `openspec/woo-build-rules.md`:
 - [ ] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
 - [ ] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`.
 - [ ] CI runs the gates on the full tree; the coverage guard needs a test for every added statement.
-- [ ] `openspec validate outbound-call-log-investigation-window-page-and-allowlist --type change --strict` passes.
+- [x] `openspec validate outbound-call-log-investigation-window-page-and-allowlist --type change --strict` passes.
 - [ ] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
 - [ ] Done means merged on `development` with CI green. Row 13.23 is `production` only once a store release carries it.

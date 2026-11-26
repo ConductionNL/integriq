@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md
  * (REQ-ADRC-001, an API description is checked against rule sets; REQ-ADRC-003,
  * a product with an open error is not published).
  *
@@ -14,6 +14,9 @@
  *
  * The product is this run's own, with one endpoint whose path ends in a
  * slash, so the built-in rule `/core/no-trailing-slash` finds an error. The
+ * description the gateway writes also fails rules that hold for every product
+ * on the instance (contact, URI version, API-Version header, http); those are
+ * gateway-scoped, listed but not blocking, so the refusal names only this one. The
  * seeded `besluiten-api` is left alone: other specs read its seeded findings.
  * Making the product active goes through OpenRegister's object API, where
  * ApiProductPublishGuardListener refuses it; the rule evaluation itself
@@ -72,6 +75,19 @@ async function makeActive(request: APIRequestContext) {
 	})
 }
 
+/** A design finding, as the refusal returns it. */
+type Finding = { id: string, ruleId: string, severity: string, status: string }
+
+/**
+ * The rule ids of the open errors a refusal lists.
+ *
+ * @param body The refusal's JSON body.
+ * @return The rule ids.
+ */
+function openErrorRuleIds(body: { errors?: { findings?: Finding[] } }): string[] {
+	return (body.errors?.findings ?? []).filter((f) => f.severity === 'error' && f.status === 'open').map((f) => f.ruleId)
+}
+
 /**
  * Open the product page and wait for its design rules panel.
  *
@@ -121,7 +137,8 @@ test.describe('gateway-api-design-rules-check: checking a product before it is p
 		await expect(errors).toBeVisible({ timeout: 30_000 })
 		const finding = errors.getByRole('listitem').filter({ hasText: RULE })
 		await expect(finding).toBeVisible()
-		await expect(finding.locator('code'), 'the path in the description').toContainText('besluiten/')
+		// The path is a JSON Pointer into the description, as the seeded finding stores it (`~1` is `/`).
+		await expect(finding.locator('code'), 'the path in the description').toHaveText(`/paths/~1${RUN}~1besluiten~1`)
 		await expect(finding.getByRole('link', { name: RULE }), 'a link to the rule').toHaveAttribute('href', /^https?:\/\//)
 
 		const groups = panel.locator('[data-testid^="api-design-group-"]')
@@ -130,9 +147,11 @@ test.describe('gateway-api-design-rules-check: checking a product before it is p
 
 	// @e2e api-design-rules::a-waiver-lets-a-known-exception-through
 	test('an open error refuses activation until it is waived, and the page shows the waiver', async ({ page, request }) => {
+		// The gateway-scoped rules (contact, URI version, API-Version header, TLS) are listed
+		// but do not refuse, so the one error that blocks is this product's own.
 		const refused = await makeActive(request)
 		expect(refused.status(), 'activation with an open error is refused').toBeGreaterThanOrEqual(400)
-		expect(await refused.text(), 'the refusal names the finding').toContain(RULE)
+		expect(openErrorRuleIds(await refused.json()), 'the refusal lists the one open finding').toEqual([RULE])
 
 		const panel = await openPanel(page)
 		const finding = panel.getByTestId('api-design-group-error').getByRole('listitem').filter({ hasText: RULE })
@@ -141,7 +160,8 @@ test.describe('gateway-api-design-rules-check: checking a product before it is p
 
 		const dialog = page.getByTestId('waive-finding-dialog')
 		await expect(dialog).toBeVisible({ timeout: 15_000 })
-		await dialog.getByTestId('waive-finding-reason').locator('input, textarea').first().fill(REASON)
+		// NcTextField puts the test id on the input itself.
+		await dialog.getByRole('textbox', { name: 'Reason' }).fill(REASON)
 		await dialog.getByTestId('waive-finding-submit').click()
 		await expect(panel.getByText(REASON)).toBeVisible({ timeout: 15_000 })
 

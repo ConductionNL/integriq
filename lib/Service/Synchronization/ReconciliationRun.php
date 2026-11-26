@@ -25,7 +25,7 @@ use OCA\Integriq\Service\SynchronizationRunLog;
 /**
  * What a reconciliation run read and what it did so far.
  *
- * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+ * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
  */
 class ReconciliationRun {
 
@@ -69,7 +69,7 @@ class ReconciliationRun {
 	 *
 	 * @return bool True when the target lists it.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function isListed(string $targetId): bool {
 		return $targetId !== '' && isset($this->targetItems[$targetId]) === true;
@@ -80,7 +80,7 @@ class ReconciliationRun {
 	 *
 	 * @return string[] The ids.
 	 *
-	 * @spec openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-nightly-run-repairs-drift-without-making-teachers-inactive-on-a-partial-read-req-hrs-004
 	 */
 	public function unclaimed(): array {
 		return array_values(array_map('strval', array_keys(array_diff_key($this->targetItems, $this->claimed))));

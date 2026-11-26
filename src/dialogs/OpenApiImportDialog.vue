@@ -13,7 +13,7 @@
   marked and cannot be picked. Import creates one source and one endpoint per
   picked operation, then says which credential the new source asks for.
 
-  @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+  @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 -->
 <template>
 	<NcDialog
@@ -201,7 +201,7 @@ export default {
 		 * Whether a document and a prefix are given.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 		 */
 		canPreview() {
 			return (this.url.trim() !== '' || this.text.trim() !== '') && this.prefix.trim() !== ''
@@ -211,7 +211,7 @@ export default {
 		 * The document's servers as select options.
 		 *
 		 * @return {Array<{id: number, label: string}>}
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 		 */
 		serverOptions() {
 			return (this.preview?.servers ?? []).map((server) => ({
@@ -224,7 +224,7 @@ export default {
 		 * What the import did.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
 		 */
 		resultText() {
 			return importSummary(this.result, t, n)
@@ -234,7 +234,7 @@ export default {
 		 * Which credential the new source asks for, or ''.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
 		 */
 		credentialText() {
 			return credentialSummary(this.result, t)
@@ -269,7 +269,7 @@ export default {
 		 * The request body shared by preview and import.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 		 */
 		body() {
 			return importRequest({
@@ -286,7 +286,7 @@ export default {
 		 * @param {Error} error The failed request.
 		 * @param {string} fallback The message when the server gave none.
 		 * @return {string}
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001
 		 */
 		messageOf(error, fallback) {
 			const message = error?.response?.data?.message
@@ -296,7 +296,7 @@ export default {
 		/**
 		 * Read what an import would create; nothing is written.
 		 *
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-a-colliding-path-is-flagged-before-anything-is-written
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-a-colliding-path-is-flagged-before-anything-is-written
 		 */
 		async runPreview() {
 			this.busy = true
@@ -321,7 +321,7 @@ export default {
 		/**
 		 * Create the source and the picked endpoints.
 		 *
-		 * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
+		 * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#scenario-an-administrator-connects-a-vendor-api-from-its-document
 		 */
 		async runImport() {
 			this.busy = true

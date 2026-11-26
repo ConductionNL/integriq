@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use OCA\Integriq\Service\MessageValidation\XsdChecker;
  * does not check is refused by name rather than passed, so a declared
  * validation can never be silently skipped.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ValidationOutcome::failure is the value object's named constructor.
  */
@@ -68,8 +68,8 @@ class MessageValidationService implements MessageValidationServiceInterface {
 	 *
 	 * @return ValidationOutcome
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-xml-is-validated-without-network-access-req-msv-004
 	 */
 	public function validate(array $messageSchema, mixed $payload, array $context = []): ValidationOutcome {
 		$kind = (string)($messageSchema['kind'] ?? '');
@@ -95,7 +95,7 @@ class MessageValidationService implements MessageValidationServiceInterface {
 	 *
 	 * @return string|null The parser's message.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
 	 */
 	public function documentProblem(array $messageSchema): ?string {
 		$document = self::documentText(document: ($messageSchema['document'] ?? ''));
@@ -121,7 +121,7 @@ class MessageValidationService implements MessageValidationServiceInterface {
 	 *
 	 * @return string The document text.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	private static function documentText(mixed $document): string {
 		if (is_array($document) === true || is_object($document) === true) {

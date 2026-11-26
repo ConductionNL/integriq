@@ -72,12 +72,18 @@ interface MappingServiceInterface {
 	 * never resolved (mapping-woo-index-field-mapping D4).
 	 *
 	 * @param string $reference The uuid, id, slug or reference.
+	 * @param bool   $scoped    Whether the caller's read rule and organisation narrow the lookup;
+	 *                          false for a sibling app's MappingExecutionRequestedEvent.
 	 *
 	 * @return ObjectEntity|null The mapping object, or null when nothing matches.
 	 *
+	 * @contract-shift internal-only — MappingService in this app is the only implementer
+	 *                  of OCA\Integriq\Service\MappingServiceInterface; OpenRegister's
+	 *                  interface of the same name is a different contract.
+	 *
 	 * @spec openspec/specs/woo-index-mapping/spec.md#requirement-a-sibling-app-runs-a-mapping-by-slug-through-a-typed-event-req-woom-001
 	 */
-	public function findMapping(string $reference): ?ObjectEntity;
+	public function findMapping(string $reference, bool $scoped=true): ?ObjectEntity;
 
 	/**
 	 * Maps (transforms) an array (input) to a different array (output).
@@ -121,6 +127,23 @@ interface MappingServiceInterface {
 	 * @spec openspec/specs/openconnector-direct-or-usage/spec.md
 	 */
 	public function getMapping(string $mappingId): OrMapping;
+
+	/**
+	 * The mapping a rule names, read as the gateway's own configuration.
+	 *
+	 * Read unscoped, so a public endpoint's anonymous caller is served, and
+	 * bounded by the rule's organisation.
+	 *
+	 * @param string       $mappingId The mapping's id or uuid.
+	 * @param ObjectEntity $rule      The rule that names the mapping.
+	 *
+	 * @return OrMapping The hydrated mapping value object.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the mapping does not exist or belongs to another organisation.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
+	 */
+	public function getRuleMapping(string $mappingId, ObjectEntity $rule): OrMapping;
 
 	/**
 	 * Retrieves all available mappings.

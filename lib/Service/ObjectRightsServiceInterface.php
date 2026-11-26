@@ -34,7 +34,7 @@ interface ObjectRightsServiceInterface {
 	 *
 	 * @return array<int, string> The slugs of the schemas whose update did not go through.
 	 *
-	 * @spec openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
+	 * @spec openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md#requirement-object-rights-per-configuration-schema-are-set-on-the-screen-req-arc-003
 	 */
 	public function apply(array $matrix): array;
 }//end interface

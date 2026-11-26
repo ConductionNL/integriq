@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-a-target-that-is-down-is-skipped-req-uprt-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,7 +31,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
@@ -70,6 +69,13 @@ class UpstreamRouterTest extends TestCase {
 	 * @var list<string>
 	 */
 	private array $called = [];
+
+	/**
+	 * The fields each call was named with, by call log.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	private array $named = [];
 
 	/**
 	 * The call log rows saved by the router.
@@ -165,21 +171,22 @@ class UpstreamRouterTest extends TestCase {
 	private function router(int $point = 0): UpstreamRouter {
 		$calls = $this->createMock(CallService::class);
 		$calls->method('call')->willReturnCallback(
-			function (ObjectEntity $source, string $endpoint = '', string $method = 'GET'): ObjectEntity {
+			function (ObjectEntity $source, string $endpoint = '', string $method = 'GET', array $config = []): ObjectEntity {
 				$uuid = (string)$source->getUuid();
 				$this->called[] = $uuid;
 				$log = 'log-' . count($this->called);
-				$this->stored[$log] = ['statusCode' => $this->answers[$uuid], 'response' => ['body' => '[redacted]']];
+				// CallService writes the named fields with the record (the call log is append-only).
+				$fields = (array)($config['logFields'] ?? []);
+				$this->named[] = ['uuid' => $log] + $fields;
 
-				return self::entity(uuid: $log, body: ['statusCode' => $this->answers[$uuid], 'response' => ['body' => 'secret in memory']]);
+				return self::entity(uuid: $log, body: ['statusCode' => $this->answers[$uuid]] + $fields);
 			}
 		);
 
 		return new UpstreamRouter(
 			objects: $this->objects,
 			calls: $calls,
-			selector: new UpstreamSelector(random: static fn (int $max): int => min($point, ($max - 1))),
-			logger: $this->createMock(LoggerInterface::class)
+			selector: new UpstreamSelector(random: static fn (int $max): int => min($point, ($max - 1)))
 		);
 	}//end router()
 
@@ -245,21 +252,18 @@ class UpstreamRouterTest extends TestCase {
 	}//end testATargetWithAnOpenBreakerIsSkipped()
 
 	/**
-	 * The routing is merged onto the stored, redacted call log, never onto the bodies in memory.
+	 * The routing is written with the call log record; the append-only record is never updated.
 	 *
 	 * @return void
 	 */
-	public function testTheStampKeepsTheStoredRedactedCallLog(): void {
+	public function testTheRoutingIsWrittenWithTheCallLogNeverOntoIt(): void {
 		$this->source(uuid: 'a');
 
 		$this->router()->call(request: self::request(targets: [['source' => 'a']]));
 
-		$this->assertCount(1, $this->saved);
-		$this->assertSame('log-1', $this->saved[0]['uuid']);
-		$this->assertSame('call_log', $this->saved[0]['schema']);
-		$this->assertSame('[redacted]', $this->saved[0]['response']['body']);
-		$this->assertSame('a', $this->saved[0]['routedTarget']);
-	}//end testTheStampKeepsTheStoredRedactedCallLog()
+		$this->assertSame(expected: [['uuid' => 'log-1', 'routedTarget' => 'a', 'routedReason' => 'weight']], actual: $this->named);
+		$this->assertSame(expected: [], actual: $this->saved, message: 'The append-only call log is never updated.');
+	}//end testTheRoutingIsWrittenWithTheCallLogNeverOntoIt()
 
 	/**
 	 * A GET that got a 503 is tried once on the other target, which the call log names with reason retry.
@@ -277,8 +281,8 @@ class UpstreamRouterTest extends TestCase {
 		$this->assertSame('b', $result->getObject()['routedTarget']);
 		$this->assertSame('retry', $result->getObject()['routedReason']);
 		$this->assertSame(
-			[['log-1', 'a', 'weight'], ['log-2', 'b', 'retry']],
-			array_map(static fn (array $row): array => [$row['uuid'], $row['routedTarget'], $row['routedReason']], $this->saved)
+			expected: [['log-1', 'a', 'weight'], ['log-2', 'b', 'retry']],
+			actual: array_map(static fn (array $row): array => [$row['uuid'], $row['routedTarget'], $row['routedReason']], $this->named)
 		);
 	}//end testAnIdempotentCallIsRetriedOnceOnAnotherTarget()
 

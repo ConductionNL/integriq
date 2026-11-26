@@ -37,12 +37,20 @@
       output depends on its input and cannot be read as a filter set.
       `EndpointIdFetchGuard` checks the object's own fields; a mismatch, or a
       missing field, answers the same 404 as a missing object.
-- [ ] Test. PHPUnit covers TC-8 and TC-9's shape
+- [x] Test (Newman written, runs in nightly where decidiq is installed). PHPUnit covers TC-8 and TC-9's shape
       (`tests/Unit/Service/EndpointIdFetchGuardTest.php`,
       `EndpointServiceTest::testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound`,
       `::testADraftAnswersTheSameNotFoundAsAMissingObject`, red before the guard).
-      Still open: TC-8/TC-9 in Newman against the ORI endpoints (Task 1) and
-      the TC-10 publish-window comparison (Risk 3), which needs an instance.
+      Newman: `tests/postman/ori-public-serving.postman_collection.json` stages
+      an amendment, a draft meeting and a future-dated publication in
+      decidiq's register and reads them anonymously from the `ori-parity/v1`
+      endpoints. TC-8: the amendment is 404 under /motions and 200 under
+      /amendments, so the guard is selective. TC-9: the draft meeting is 404.
+      TC-10, the Risk 3 check: the future publication answers what
+      OriController answers (404). TC-11: never 403. Each check is compared
+      with decidiq's own OriController. Without decidiq's register the first
+      request stops the run. The scripts were checked against a local stub
+      (both paths pass); the live run is in nightly.
 
 ### Task 3: Wire anonymous rate-limiting and CORS parity for the ORI Endpoints
 - **spec_ref**: `openspec/changes/ori-public-serving/contract.md#error-codes`, `openspec/changes/ori-public-serving/design.md#security-considerations`
@@ -83,7 +91,7 @@
 
 ## Verification
 - [ ] All tasks checked off
-- [ ] `openspec validate` passes
+- [x] `openspec validate` passes (`openspec validate ori-public-serving --strict`, openspec 2.2.0)
 - [ ] Manual testing against acceptance criteria
 - [ ] Code review against spec requirements
 
@@ -91,7 +99,8 @@
 
 - [x] PHPUnit unit tests for `EndpointService::getObjects()`'s new id-fetch guard (Task 2) and for the mapping recipes' field-projection output (Task 1)
   - Run 22 Nov: `EndpointIdFetchGuardTest` (7), `EndpointServiceTest::testASingleObjectFailingTheEndpointsFixedFiltersAnswersNotFound` and `::testADraftAnswersTheSameNotFoundAsAMissingObject` (2), and `OriPublicEndpointsTest` (14), which runs the seeded ORI mappings through a real `MappingService`: the list and item shapes, a field the object lacks left out, an unlisted field kept in the register, and an e-mail only on organizations and persons. All pass.
-- [ ] Newman/Postman collection covering test-plan.md TC-1 through TC-14 against the validation-prefix Endpoints
+- [x] Newman/Postman collection covering test-plan.md TC-1 through TC-14 against the validation-prefix Endpoints
+  - 2026-11-25 live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 43ba16d9, decidiq development 6305a5b with its municipality example set): `tests/postman/ori-public-serving.postman_collection.json` now covers TC-1, TC-2, TC-3 (all eleven resources diffed against OriController, order-insensitive), TC-4, TC-5, TC-7, TC-8 to TC-11 and TC-13; TC-6 (needs a governance body with an email), TC-12 (a 121-request performance run) and TC-14 (the RIS poll job) are named as not covered. Run: 45 requests, 71/78. Red, all TC-3 parity: persons lists 11 where OriController publishes 2 (OriPersonPublicationRule derives public persons from public-role memberships of bodies that publish voting records, which no fixedFilter expresses), memberships carry an extra `end_date`, and voteevents/votes answer 0 where OriController answers 1/2 (their `lifecycle: published` filter does not match decidiq's rule). Fixed here: the persons projection exposed every person's email anonymously; it now publishes OriController's fields only (id, name, image, biography), guarded by a new assertion.
 - [ ] Browser tests (Playwright MCP) — N/A, this change has no Vue/UI surface; ORI is a public JSON API only
 - [ ] All tests pass (`composer test`, `newman run`)
 

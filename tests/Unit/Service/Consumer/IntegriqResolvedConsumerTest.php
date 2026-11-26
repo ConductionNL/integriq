@@ -15,7 +15,7 @@
  *
  * @link https://www.Integriq.nl
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
 
 declare(strict_types=1);

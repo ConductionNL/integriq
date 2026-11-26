@@ -237,6 +237,23 @@ class LtiControllerKeysAndTokenTest extends TestCase {
 
 	}//end testAScoreIsReceivedWithTheTokenAndThePayload()
 
+	/**
+	 * The route name and path parameters the router adds to the request never reach the score.
+	 *
+	 * @return void
+	 */
+	public function testTheRouterParametersAreNotPartOfTheScore(): void {
+		$this->authorization = 'Bearer tok-1';
+		$this->params        = ['_route' => 'integriq.lti.agsscore', 'deployment' => 'dep-1', 'lineItemId' => 'li-1', 'userId' => 'u1', 'scoreGiven' => 8];
+		$this->ags->expects($this->once())
+			->method('receiveScore')
+			->with('tok-1', 'dep-1', 'li-1', ['userId' => 'u1', 'scoreGiven' => 8])
+			->willReturn(['stored' => true]);
+
+		$this->controller->agsScore('dep-1', 'li-1');
+
+	}//end testTheRouterParametersAreNotPartOfTheScore()
+
 	public function testAScoreTheServiceRejectsAnswersItsStatus(): void {
 		$this->authorization = 'Bearer tok-1';
 		$this->ags->method('receiveScore')->willThrowException(new LtiValidationException(message: 'Wrong deployment', httpStatus: 403));

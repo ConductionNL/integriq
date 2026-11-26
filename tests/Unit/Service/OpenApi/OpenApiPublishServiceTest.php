@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-integriq-publishes-an-openapi-description-of-its-endpoints-req-oapi-002
  */
 
 declare(strict_types=1);
@@ -333,4 +333,34 @@ class OpenApiPublishServiceTest extends TestCase {
 		$this->assertValidOpenApi31(document: $open);
 		$this->assertSame('object', $open['paths']['/vendor/pets/{petId}']['get']['responses']['200']['content']['application/json']['schema']['type']);
 	}//end testAnEmptyGatewayAndAnUndescribedEndpoint()
+
+	/**
+	 * An endpoint routed with a trailing slash is published with it, written either way.
+	 *
+	 * The gateway's route regex keeps the slash, so the description must too; otherwise
+	 * `/core/no-trailing-slash` never sees the path the gateway serves.
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+	 *
+	 * @return void
+	 */
+	public function testATrailingSlashRouteIsPublishedWithItsSlash(): void {
+		$api = ['method' => 'GET', 'targetType' => 'api', 'targetId' => 'src-1'];
+		$slash = ['uuid' => 'ep-slash', 'name' => 'Besluiten', 'endpoint' => 'run/besluiten/'];
+		$this->rows['endpoint'][] = $slash + ['endpointArray' => ['run', 'besluiten', '']] + $api;
+		$this->rows['endpoint'][] = ['uuid' => 'ep-array', 'name' => 'Array only', 'endpointArray' => ['run', 'besluit', '']] + $api;
+		$this->rows['endpoint'][] = ['uuid' => 'ep-root', 'name' => 'Root', 'endpoint' => '/', 'endpointArray' => ['', '']] + $api;
+		$product = [
+			'uuid' => 'p',
+			'name' => 'Besluiten API',
+			'visibility' => 'public',
+			'status' => 'active',
+			'endpoints' => ['ep-slash', 'ep-array', 'ep-root', 'ep-zaak'],
+		];
+
+		$document = $this->service()->productDocument(product: self::entity(row: $product), serverUrl: self::SERVER);
+		$this->assertValidOpenApi31(document: $document);
+
+		$this->assertSame(expected: ['/run/besluit/', '/run/besluiten/', '/zaken'], actual: array_keys($document['paths']));
+	}//end testATrailingSlashRouteIsPublishedWithItsSlash()
 }//end class

@@ -170,7 +170,9 @@ describe('the host key panel on the source page', () => {
 
 		expect(page.config.bodyWidgets.find((entry) => entry.component === 'SourceHostKeyPanel')).toBeTruthy()
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
-		expect(registry).toContain("import SourceHostKeyPanel from './components/SourceHostKeyPanel.vue'")
+		expect(registry).toMatch(
+			/const SourceHostKeyPanel = lazyComponent\(\s*\(\) => import\('\.\/components\/SourceHostKeyPanel\.vue'\),\s*'SourceHostKeyPanel',?\s*\)/,
+		)
 		expect(registry).toMatch(/^\tSourceHostKeyPanel,$/m)
 	})
 })

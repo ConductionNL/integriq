@@ -22,7 +22,10 @@ vi.mock('@nextcloud/vue', () => ({
 	NcActions: {},
 	NcButton: {},
 	NcCheckboxRadioSwitch: {},
+	NcDialog: {},
 	NcModal: {},
+	NcTextArea: {},
+	NcTextField: {},
 }))
 
 const rowActions = (await import('@/components/intake/IntakeMessageRowActions.vue')).default

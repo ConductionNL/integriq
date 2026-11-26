@@ -270,14 +270,13 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return McpProxyHandler The handler.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	private function mcpProxyHandler(): McpProxyHandler {
 		if ($this->mcpProxyHandler === null) {
 			$this->mcpProxyHandler = new McpProxyHandler(
 				calls: $this->callService,
 				limits: $this->rateLimitService,
-				objects: $this->orObjectService,
 				logger: $this->logger
 			);
 		}
@@ -299,7 +298,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return Response The relaying answer, or a refusal.
 	 *
-	 * @spec openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-an-outside-mcp-server-is-published-as-a-gateway-endpoint-req-mcpx-001
 	 */
 	private function handleMcpRequest(ObjectEntity $endpoint, IRequest $request, string $path): Response {
 		$endpointData = $endpoint->getObject();
@@ -317,8 +316,9 @@ class EndpointService implements EndpointServiceInterface {
 		}
 
 		try {
+			// `upstreamPath` names the tool server's path, as for an api endpoint; without it the public path is used.
 			$upstreamPath = $this->callService->renderEndpointPath(
-				endpoint: (string)($endpointData['endpoint'] ?? ''),
+				endpoint: (new UpstreamPathTemplate())->forEndpoint(endpointData: $endpointData),
 				context: $this->buildUpstreamPathContext(endpointData: $endpointData, request: $request, path: $path, rawBody: $rawBody)
 			);
 		} catch (UnexpectedValueException $exception) {
@@ -351,15 +351,14 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return UpstreamRouter The router.
 	 *
-	 * @spec openspec/changes/gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-upstream-routing/specs/endpoint-runtime/spec.md#requirement-an-endpoint-routes-to-one-of-several-targets-req-uprt-001
 	 */
 	private function upstreamRouter(): UpstreamRouter {
 		if ($this->upstreamRouter === null) {
 			$this->upstreamRouter = new UpstreamRouter(
 				objects: $this->orObjectService,
 				calls: $this->callService,
-				selector: new UpstreamSelector(),
-				logger: $this->logger
+				selector: new UpstreamSelector()
 			);
 		}
 
@@ -512,7 +511,7 @@ class EndpointService implements EndpointServiceInterface {
 	 * @return Response
 	 *
 	 * @spec openspec/specs/endpoint-runtime/spec.md
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function transformError(Response $result, IRequest $request): Response {
 		if ($result->getStatus() < 200 || $result->getStatus() >= 300) {
@@ -530,15 +529,39 @@ class EndpointService implements EndpointServiceInterface {
 				$legacy['error'] = $error;
 			}
 
+			// Keep the answer's headers: a token-protected endpoint's 401 carries the
+			// WWW-Authenticate challenge that names its metadata URL (REQ-TOKV-004),
+			// and the problem document must not drop it.
 			return ProblemResponse::fromLegacy(
 				data: array_merge($resultData, $legacy),
 				status: $result->getStatus(),
-				instance: $request->getId()
+				instance: $request->getId(),
+				headers: self::headersWithoutContentType(response: $result)
 			);
 		}
 
 		return $result;
 	}//end transformError()
+
+	/**
+	 * An answer's headers, without its Content-Type, for the problem document that replaces it.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private static function headersWithoutContentType(Response $response): array {
+		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
+		if (is_array($headers) === false) {
+			return [];
+		}
+
+		unset($headers['Content-Type']);
+
+		return $headers;
+	}//end headersWithoutContentType()
 
 	/**
 	 * Turn a gateway error answer into a problem document, keeping its headers.
@@ -550,7 +573,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return Response The problem document, or the answer unchanged.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function asProblem(Response $response, IRequest $request): Response {
 		if ($response->getStatus() < 400
@@ -566,10 +589,12 @@ class EndpointService implements EndpointServiceInterface {
 			$data = ['error' => (string)json_encode($data)];
 		}
 
-		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
-		unset($headers['Content-Type']);
-
-		return ProblemResponse::fromLegacy(data: $data, status: $response->getStatus(), instance: $request->getId(), headers: $headers);
+		return ProblemResponse::fromLegacy(
+			data: $data,
+			status: $response->getStatus(),
+			instance: $request->getId(),
+			headers: self::headersWithoutContentType(response: $response)
+		);
 	}//end asProblem()
 
 	/**
@@ -582,7 +607,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return ProblemResponse
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	private function internalProblem(string $detail, ?IRequest $request): ProblemResponse {
 		return ProblemResponse::fromLegacy(data: ['error' => $detail], status: Http::STATUS_INTERNAL_SERVER_ERROR, instance: $request?->getId());
@@ -668,7 +693,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *                  when synthetic-request construction fails (see `buildSyntheticRequest()`).
 	 *
 	 * @spec openspec/specs/flow-workflowengine-operations/spec.md#requirement-the-call-endpoint-operation-s-onevent-must-dispatch-to-endpointservice-triggerfromflow-req-003
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function triggerFromFlow(ObjectEntity $endpoint, array $parameters = []): Response {
 		try {
@@ -1447,7 +1472,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md#requirement-resume-on-approval-req-003
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-trace-persistence-as-one-execution-trace-object-per-execution-req-004
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function resumeFromApproval(
 		ObjectEntity $endpoint,
@@ -1544,7 +1569,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-dry-run-replay-performs-no-writes-req-005
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-forced-replay-reuses-the-original-entry-point-s-real-dispatch-path-req-006
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-every-gateway-error-is-a-problem-document-req-rcpe-002
 	 */
 	public function replay(ObjectEntity $endpoint, array $requestSnapshot, ExecutionTraceContext $trace, bool $dryRun = true): Response {
 		try {
@@ -1641,8 +1666,8 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 	 * @spec openspec/specs/consumer-management/spec.md#requirement-per-product-tier-policy-takes-precedence-over-the-consumer-level-rate-limit-req-con-sub-002
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
 		$consumer = $this->authorizationService->getResolvedConsumer();
@@ -3164,7 +3189,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return array{settings: array<string, mixed>, request: array<string, mixed>}|null
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	private function responseCacheOf(array $endpointData, IRequest $request, string $path): ?array {
 		$settings = $this->responseCache?->settings(endpointData: $endpointData);
@@ -3205,7 +3230,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return string|null The caller, or null to not cache this request.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	private function cacheCaller(array $settings): ?string {
 		if (($settings['sharedAcrossConsumers'] ?? false) === true) {
@@ -3234,7 +3259,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	private function answerFromCache(ObjectEntity $endpoint, ?ObjectEntity $source, array $hit): JSONResponse {
 		$log = [
@@ -3461,7 +3486,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return JSONResponse The 429.
 	 *
-	 * @spec openspec/changes/sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
+	 * @spec openspec/changes/archive/2026-11-25-sources-outbound-rate-limit-pacing/specs/http-call-engine/spec.md#requirement-a-live-call-waits-briefly-background-work-waits-for-the-window-req-rlpc-002
 	 */
 	private function pacedRefusal(int $retryAfter): JSONResponse {
 		$response = new JSONResponse(
@@ -3591,7 +3616,7 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * @return JSONResponse|array|null A refusal, a finding for the call log, or null when it passes.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	private function validateMessage(array $endpointData, string $direction, mixed $body, array $context): JSONResponse|array|null {
 		if ((string)($endpointData['validation'][$direction]['messageSchema'] ?? '') === '') {
@@ -4603,7 +4628,9 @@ class EndpointService implements EndpointServiceInterface {
 		if (isset($authentication['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
 			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$authentication['header']);
+			// The request headers come from $_SERVER (HTTP_X_API_KEY), so a dash
+			// in the configured name is an underscore there.
+			$lookupKey = str_replace(search: '-', replace: '_', subject: strtolower((string)$authentication['header']));
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
@@ -4863,7 +4890,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	private function processMappingRule(ObjectEntity $rule, array $data): array {
 		$config = $rule->getObject()['configuration'] ?? [];
-		$mapping = $this->mappingService->getMapping($config['mapping']);
+		$mapping = $this->mappingService->getRuleMapping(mappingId: (string)($config['mapping'] ?? ''), rule: $rule);
 
 		$data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
 

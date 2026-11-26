@@ -22,11 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Tests\Unit\Service\Catalogi;
 
+use OCA\Integriq\Exception\AuthenticationException;
 use OCA\Integriq\Service\Catalogi\CatalogiBinding;
 use OCA\Integriq\Service\Catalogi\CatalogiGate;
 use OCA\Integriq\Service\Catalogi\CatalogiTokenService;
 use OCA\Integriq\Service\Catalogi\CatalogusEndpointHandler;
 use OCA\Integriq\Service\Catalogi\InformatieobjecttypeEndpointHandler;
+use OCA\Integriq\Service\Consumer\OpenRegisterCredentialBridgeInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -96,5 +98,43 @@ class CatalogusEndpointHandlerTest extends TestCase {
 		self::assertSame(0, $this->handler()->index(authorization: $bearer, baseUrl: self::BASE_URL, query: ['rsin' => '123456789'])['body']['count']);
 		self::assertSame(403, $this->handler()->index(authorization: self::bearer(clientId: 'stranger'), baseUrl: self::BASE_URL, query: [])['status']);
 	}//end testTheListFiltersOnDomeinAndRsin()
+
+	/**
+	 * The token is checked once per request: a bridge that refuses a replayed
+	 * jti, as the live credential bridge does, still gets the type list.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001
+	 */
+	public function testTheTypeListDoesNotPresentTheTokenTwice(): void {
+		$seen = [];
+		$bridge = $this->createMock(OpenRegisterCredentialBridgeInterface::class);
+		$bridge->method('authorizeJwt')->willReturnCallback(
+			static function (string $authorization) use (&$seen): void {
+				if (in_array($authorization, $seen, true) === true) {
+					throw new AuthenticationException('replayed jti');
+				}
+
+				$seen[] = $authorization;
+			}
+		);
+		$gate = new CatalogiGate(bindingReader: static fn (): CatalogiBinding => self::binding(), tokens: new CatalogiTokenService(credentials: $bridge));
+		$handler = new CatalogusEndpointHandler(
+			gate: $gate,
+			types: new InformatieobjecttypeEndpointHandler(
+				gate: $gate,
+				typesReader: static fn (): array => [['id' => 'type-1', 'name' => 'Besluit', 'active' => true], ['id' => 'type-2', 'name' => 'Ontwerp', 'active' => false]]
+			)
+		);
+
+		$shown = $handler->show(authorization: self::bearer(clientId: 'reader'), uuid: 'cat-1', baseUrl: self::BASE_URL);
+		self::assertSame(200, $shown['status']);
+		self::assertSame([self::BASE_URL . '/informatieobjecttypen/type-1'], $shown['body']['informatieobjecttypen']);
+
+		$listed = $handler->index(authorization: self::bearer(clientId: 'reader') . '-2', baseUrl: self::BASE_URL, query: []);
+		self::assertSame(200, $listed['status']);
+		self::assertSame([self::BASE_URL . '/informatieobjecttypen/type-1'], $listed['body']['results'][0]['informatieobjecttypen']);
+	}//end testTheTypeListDoesNotPresentTheTokenTwice()
 
 }//end class

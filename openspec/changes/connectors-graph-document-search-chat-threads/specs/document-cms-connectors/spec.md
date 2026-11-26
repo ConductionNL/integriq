@@ -10,8 +10,7 @@ with `platform`, `conversation` (`id`, `name`, `kind`), `participants` (each
 `isHit`), holding up to `context` messages before and after the hit (default
 5, maximum 25, a larger value refused). The `content` SHALL be a plain text
 transcript of that thread with the hit marked. The thread SHALL be read with
-the same grant as the hit. System messages and deleted messages SHALL NOT be
-part of a thread.
+the same grant as the hit.
 
 #### Scenario: a Teams channel message keeps its conversation
 - GIVEN a Teams channel hit "Stationsplein: planning aanbesteding" with 8 messages before it and 3 after it
@@ -22,7 +21,7 @@ part of a thread.
 #### Scenario: system and deleted messages stay out
 - GIVEN a chat whose neighbouring messages include a member-added event and a deleted message
 - WHEN the hit is fetched
-- THEN neither appears in `messages`
+- THEN neither appears in `messages`: system messages and deleted messages are never part of a thread
 - @e2e exclude a filter; covered by PHPUnit `Microsoft365AdapterThreadTest::testSystemAndDeletedMessagesAreDropped`
 
 #### Scenario: an oversized context is refused
@@ -39,15 +38,12 @@ only conversations that person is in can match, and answer them as REQ-DCC-004
 hits with `entityType` `chatMessage`, `platform` `nextcloud-talk`,
 `conversationId` and a handle. A fetch of a Talk hit SHALL first confirm
 through Talk that the person is still a participant, and SHALL answer
-`not-a-participant` with no messages when they are not. Its thread SHALL
-follow REQ-DCC-010. When Talk is not installed the Talk part SHALL answer the
-notice `talk-not-installed` and no hits, and the Teams part SHALL be
-unaffected.
+`not-a-participant` with no messages when they are not.
 
 #### Scenario: an officer finds a Talk discussion about a project
 - GIVEN Talk installed, and the officer in a conversation "Project Stationsplein" with a message "offerte Stationsplein ontvangen"
 - WHEN she searches "Stationsplein"
-- THEN a hit with platform `nextcloud-talk`, the conversation name and the message time comes back, and fetching it returns the conversation's participants and the messages around it
+- THEN a hit with platform `nextcloud-talk`, the conversation name and the message time comes back, and fetching it returns the conversation's participants and the messages around it as REQ-DCC-010 describes
 - @e2e exclude a backend command; covered by PHPUnit `TalkMessageSourceTest::testATalkHitIsFoundAndFetchedWithItsThread` with a test that skips only when Talk's classes are absent, and one live run against a Talk instance recorded in the PR
 
 #### Scenario: a conversation the officer left is not read
@@ -59,5 +55,5 @@ unaffected.
 #### Scenario: Talk is not installed
 - GIVEN Talk not installed
 - WHEN dossiq searches both platforms
-- THEN the answer carries Teams hits and the notice `talk-not-installed`
+- THEN the Talk part answers the notice `talk-not-installed` and no hits, and the Teams hits come back unaffected
 - @e2e exclude an app-absent path; covered by PHPUnit `TalkMessageSourceTest::testTalkAbsentGivesANotice`

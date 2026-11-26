@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,7 +42,7 @@ use OCA\Integriq\Service\ApiDesign\Check\TruthyCheck;
  * stays as written. A rule whose selector cannot be read is reported as a
  * finding of that rule rather than skipped, so a broken rule cannot pass.
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
  */
 class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 
@@ -99,7 +99,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 *
 	 * @return list<string> The problems, each naming the rule it is about.
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function problemsOf(array $ruleSet): array {
 		return $this->ruleSets->problemsOf(ruleSet: $ruleSet);
@@ -111,7 +111,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
 	 */
 	public function builtInRuleSets(): array {
 		$files = glob(dirname(__DIR__, 2).'/Settings/api-design-rules/*.json');
@@ -144,7 +144,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 *
 	 * @return array{findings: list<array<string, mixed>>, manual: list<array<string, mixed>>}
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	public function check(array $document, array $ruleSets): array {
 		$document = $this->refs->inlined(document: $document);
@@ -171,7 +171,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 *
 	 * @return array{findings: list<array<string, mixed>>, manual: list<array<string, mixed>>}
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function checkRuleSet(array $document, array $ruleSet): array {
 		$name     = (string) ($ruleSet['name'] ?? '');
@@ -234,22 +234,51 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	}//end finding()
 
 	/**
-	 * The findings that hold back publication: open and error-level.
+	 * The findings that hold back publication: open and error-level, on what the product owner controls.
+	 *
+	 * A built-in rule marked `"scope": "gateway"` judges what the gateway writes into every
+	 * product's description (the server URL, info.contact, response headers). Its findings are
+	 * shown, but no product owner can fix them, so they do not refuse activation.
 	 *
 	 * @param list<array<string, mixed>> $findings The findings.
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 * @spec openspec/changes/gateway-design-findings-do-not-block-products/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
 	 */
 	public function blockingFindings(array $findings): array {
+		$gatewayRules = array_flip($this->gatewayRuleIds());
+
 		return array_values(
 			array_filter(
 				$findings,
-				static fn (array $finding): bool => ($finding['severity'] ?? null) === 'error' && ($finding['status'] ?? 'open') === 'open'
+				static fn (array $finding): bool => ($finding['severity'] ?? null) === 'error'
+					&& ($finding['status'] ?? 'open') === 'open'
+					&& isset($gatewayRules[(string) ($finding['ruleId'] ?? '')]) === false
 			)
 		);
 	}//end blockingFindings()
+
+	/**
+	 * The ids of the built-in rules that judge the gateway rather than the product.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/gateway-design-findings-do-not-block-products/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 */
+	private function gatewayRuleIds(): array {
+		$ids = [];
+		foreach ($this->builtInRuleSets() as $ruleSet) {
+			foreach ((array) ($ruleSet['rules'] ?? []) as $rule) {
+				if (is_array($rule) === true && ($rule['scope'] ?? null) === 'gateway') {
+					$ids[] = (string) ($rule['id'] ?? '');
+				}
+			}
+		}
+
+		return $ids;
+	}//end gatewayRuleIds()
 
 	/**
 	 * Run one rule over a document.
@@ -285,7 +314,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 *
 	 * @return list<array{path: string, message: string}>
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function nodeFailures(array $node, array $rule): array {
 		$failures = [];
@@ -307,7 +336,7 @@ class ApiDesignRuleService implements ApiDesignRuleServiceInterface {
 	 *
 	 * @return array{path: string, message: string}|null
 	 *
-	 * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-an-api-description-is-checked-against-rule-sets-req-adrc-001
 	 */
 	private function thenFailure(array $node, array $ruleThen): ?array {
 		['rule' => $rule, 'then' => $then] = $ruleThen;

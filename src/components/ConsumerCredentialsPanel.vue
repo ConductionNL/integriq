@@ -13,11 +13,15 @@
   @spec openspec/changes/access-consumer-credentials/specs/consumer-management/spec.md#requirement-a-new-key-is-shown-exactly-once-req-cred-002
 -->
 <template>
-	<CredentialKeysPanel
-		v-if="consumerId"
-		:credentialsUrl="credentialsUrl"
-		:administrator="true"
-		data-testid="consumer-credentials" />
+	<!-- The wrapper takes the attributes the detail page's body section passes
+	     down (its own data-testid among them), so the panel keeps its
+	     `credential-keys` test id instead of having it overwritten. -->
+	<div data-testid="consumer-credentials">
+		<CredentialKeysPanel
+			v-if="consumerId"
+			:credentialsUrl="credentialsUrl"
+			:administrator="true" />
+	</div>
 </template>
 
 <script>

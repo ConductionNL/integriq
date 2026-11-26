@@ -1,10 +1,3 @@
-# data-infra-connectors Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- sources-database-adapter
-
 ## Purpose
 
 A relational database without an API becomes an integriq source, read and written through statements an administrator declares. Row `integriq:src-database`. The adapter follows the category contract REQ-DIC-001 to REQ-DIC-006.

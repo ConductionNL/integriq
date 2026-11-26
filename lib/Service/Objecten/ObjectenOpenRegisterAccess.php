@@ -277,17 +277,27 @@ class ObjectenOpenRegisterAccess {
 	/**
 	 * The key behind a credential reference, or null.
 	 *
+	 * Read as the token's principal: a counterparty's request carries no
+	 * Nextcloud session, so the broker needs the acting user to admit an
+	 * organisation credential the principal is a member of.
+	 *
 	 * @param string $reference The reference.
+	 * @param string $principal The user the key is read as; '' for none.
 	 *
 	 * @return string|null The key.
 	 *
 	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md#requirement-a-token-carries-a-permission-per-objecttype-req-oaf-005
 	 */
-	public function readCredential(string $reference): ?string {
+	public function readCredential(string $reference, string $principal = ''): ?string {
 		try {
 			$broker = $this->service(name: self::BROKER);
 			// Positional: the broker is only known as an object with this method.
-			$key = $broker->resolveInjectable($reference, BrokeredCallService::APP_ID, null, null);
+			$actingUser = null;
+			if ($principal !== '') {
+				$actingUser = $principal;
+			}
+
+			$key = $broker->resolveInjectable($reference, BrokeredCallService::APP_ID, $actingUser, null);
 		} catch (Throwable $exception) {
 			// The class only: the message of a broker refusal can carry the reference.
 			$this->logger->warning('Integriq objecten: a token credential could not be resolved (' . $exception::class . ').');

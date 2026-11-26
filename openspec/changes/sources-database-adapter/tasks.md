@@ -22,7 +22,8 @@ Kind: code. Size M. Row `integriq:src-database`.
   - GIVEN an administrator on a database source WHEN they open schema discovery THEN tables and columns are listed, and a test run of a statement shows the first page and its duration
 - [x] Implement
   - Register fragment `register.d/sources-database-adapter.json` (source 1.9.0: `database`, `statements`, the corrected `type` description, `file` dropped). Routes `databaseSource#schema` and `#testStatement` (admin only, `DatabaseSourceController`; the test run reads at most 50 rows and never runs a write statement), in `openapi.json`. Body widget `DatabaseSourcePanel` on SourceDetail: connection, read-only advice or the write warning, statements with Test the statement (first page and duration), Show tables and columns. en and nl strings.
-- [ ] Test (Playwright)
+- [x] Test (Playwright)
+  - Run live 25 Nov 2026 on NC 34 + MariaDB: `tests/e2e/database-source.spec.ts` 2/2 pass, the zaken-sinds run against a MariaDB `zaken` table (`E2E_DB_DRIVER=pdo_mysql`, read-only user without password). The panel is found by the section's test id, since `CnBodySections` replaces the component's own.
   - Written: `tests/e2e/database-source.spec.ts` (the panel and an unreachable database on any instance; the zaken-sinds test run when `E2E_DB_HOST` names a database). Not run yet: needs a live instance. Vitest `databaseSourcePanel.spec.js` (8), `DatabaseSourceControllerTest` (5).
 
 ### Task 3: The database branch of the synchronization engine
@@ -46,6 +47,6 @@ Kind: code. Size M. Row `integriq:src-database`.
   - `DatabaseSourceDeclarationTest` (2), `CatalogRegistryServiceTest::testTheDatabaseAdapterIsListedUnderDataInfrastructure`. REQ-DIC-002's manifest entry is not checked, see above.
 
 ## Verification
-- [ ] `openspec validate sources-database-adapter --type change --strict` passes
+- [x] `openspec validate sources-database-adapter --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [x] No TimedJob class added (REQ-DIC-005)
 - [ ] PHPUnit and Playwright run, exit codes read

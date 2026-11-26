@@ -523,6 +523,98 @@ Integriq MUST offer an endpoint `targetType` of `a2a` that proxies to a source h
 - WHEN an agent calls it without a key
 - THEN the call is refused with 401 and never reaches the agent
 
+### Requirement: An endpoint routes to one of several targets (REQ-UPRT-001)
+
+Integriq MUST let an endpoint of type `api` carry a list of targets, each a source with a weight and an optional rule over the request's parameters, headers and JSON body. It MUST use the first group whose rule matches, else the targets without a rule, and MUST pick within the group by weight, or by a stable hash of the consumer when the endpoint is sticky. An endpoint without targets MUST behave as before.
+
+#### Scenario: a new release gets five percent of the traffic
+- GIVEN an endpoint with target `zaken-oud` at weight 95 and `zaken-nieuw` at weight 5
+- WHEN consumers make a thousand calls
+- THEN about fifty reach `zaken-nieuw`, and each call log names its target
+- @e2e exclude traffic split; covered by PHPUnit
+
+#### Scenario: archive requests go to the archive system
+- GIVEN a target `zaken-archief` with a rule that matches `archief=true`
+- WHEN a consumer calls with `?archief=true`
+- THEN the call reaches `zaken-archief` and the call log gives the matched rule as the reason
+- @e2e exclude covered by PHPUnit
+
+### Requirement: A target that is down is skipped (REQ-UPRT-002)
+
+Integriq MUST leave out a target whose source circuit breaker is open and cooling down. For GET, HEAD, PUT and DELETE it MUST retry once on another healthy target of the same group after a connection error or a 502, 503 or 504. It MUST NOT retry POST or PATCH. When no target is healthy it MUST answer 503 without calling any.
+
+#### Scenario: one server fails and callers do not notice
+- GIVEN two targets, one whose breaker has just opened
+- WHEN a consumer sends a GET
+- THEN the call goes to the healthy target and succeeds
+- @e2e exclude covered by PHPUnit with fake sources
+
+### Requirement: The call log records which target served a call (REQ-UPRT-003)
+
+Integriq MUST record on each call log the target that served the call and the reason it was chosen. The endpoint page MUST show the split of calls per target.
+
+#### Scenario: an administrator watches a canary
+- GIVEN an endpoint in a canary split
+- WHEN the administrator opens its page after a day of traffic
+- THEN they see how many calls each target served
+- e2e: `tests/e2e/endpoint-targets.spec.ts`
+
+### Requirement: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)
+
+Integriq MUST offer an endpoint `targetType` of `mcp` that proxies MCP streamable HTTP to a source. It MUST apply the endpoint's consumer authentication, rate limit and quota before forwarding. It MUST keep the `Mcp-Session-Id` and `MCP-Protocol-Version` headers in both directions, MUST answer with the upstream's status and content type, and MUST relay a `text/event-stream` answer event by event up to a configured maximum duration.
+
+#### Scenario: an assistant reaches a tool server only through the gateway
+- GIVEN an endpoint `mcp/documents` of type `mcp` and a consumer with an API key
+- WHEN the assistant sends `initialize` and then `tools/call` with the key
+- THEN both reach the tool server with the same session id, and a call without a key gets 401
+- @e2e exclude protocol proxying has no browser surface; covered by PHPUnit against a fixture MCP server
+
+### Requirement: The call log names the MCP tool (REQ-MCPX-002)
+
+For every call through an `mcp` endpoint integriq MUST record the JSON-RPC method and, for `tools/call`, the tool name in the call log, and the call log page MUST filter on them. Tool arguments MUST NOT be stored unless the endpoint enables it.
+
+#### Scenario: an administrator finds every call to one tool
+- GIVEN calls to the tools `search` and `fetch` through one endpoint
+- WHEN the administrator filters the call log by tool `search`
+- THEN only the `search` calls are listed, each without its arguments
+- e2e: `tests/e2e/mcp-call-log.spec.ts`
+
+### Requirement: A tool can have its own rate limit (REQ-MCPX-003)
+
+Integriq MUST let an administrator set a rate limit per tool on an `mcp` endpoint, counted per consumer. A call over the limit MUST get HTTP 429 with a JSON-RPC error that names the tool.
+
+#### Scenario: an expensive tool is limited on its own
+- GIVEN a limit of 10 calls a minute on tool `search`
+- WHEN a consumer calls `search` an eleventh time within a minute
+- THEN it gets 429 with a JSON-RPC error naming `search`, and a call to `fetch` still passes
+- @e2e exclude covered by PHPUnit
+
+### Requirement: An endpoint can cache its answers (REQ-RCPE-001)
+
+Integriq MUST let an administrator enable a response cache on an endpoint with a lifetime, the methods and status codes to cache, and the headers that vary the answer. The cache key MUST include the consumer unless the endpoint shares answers across consumers. Authentication and rate limits MUST run before a cache lookup. An upstream answer marked `private` or `no-store` MUST NOT be cached. An administrator MUST be able to clear one endpoint's cache.
+
+#### Scenario: a busy lookup no longer reaches the source every time
+- GIVEN an endpoint caching GET answers for 60 seconds
+- WHEN the same consumer asks the same question twice within a minute
+- THEN the source is called once, the second answer carries `X-Cache: HIT`, and the call log marks it as a hit
+- @e2e exclude caching is server behaviour; covered by PHPUnit
+
+#### Scenario: an administrator clears a stale answer
+- GIVEN a cached endpoint whose source data just changed
+- WHEN the administrator presses clear cache on the endpoint page
+- THEN the next call reaches the source
+- e2e: `tests/e2e/endpoint-cache.spec.ts`
+
+### Requirement: Every gateway error is a problem document (REQ-RCPE-002)
+
+Integriq MUST answer every error from an endpoint with an RFC 9457 problem document and the content type `application/problem+json`, with `type` a URI, `title`, `status`, `detail` and `instance`. Validation errors MUST list each field in `invalid-params`. For one release the document MUST also carry the old `error` and `details` members.
+
+#### Scenario: a client reads a failed authentication
+- GIVEN a consumer with a wrong key
+- WHEN it calls a protected endpoint
+- THEN the answer is 401 with content type `application/problem+json`, a `type` URI for authentication failures, and the old `error` member still present
+- @e2e exclude response format; covered by PHPUnit and Newman
+
 ## Non-Functional Requirements
 
 - **Performance:** the self-URL/HAL output helper adds negligible per-response overhead (URL construction only, no extra storage round-trip).

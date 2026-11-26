@@ -190,7 +190,9 @@ test.describe('allowlisted-expression-sources: the environment allowlist', () =>
 
 		expect(await addThroughSection(page, section, ADDED_KEY), 'the name is accepted').toBe(201)
 		added.push(ADDED_KEY)
-		await expect(page.getByText(`${ADDED_KEY} added to the allowlist.`)).toBeVisible({ timeout: 10_000 })
+		// The toast's text is also announced in a live region as "Success: …";
+		// match the toast itself exactly.
+		await expect(page.getByText(`${ADDED_KEY} added to the allowlist.`, { exact: true })).toBeVisible({ timeout: 10_000 })
 		await expect(section.getByRole('alert')).toHaveCount(0)
 		await expect(section.getByTestId('admin-expression-sources-key'), 'the field is cleared').toHaveValue('')
 

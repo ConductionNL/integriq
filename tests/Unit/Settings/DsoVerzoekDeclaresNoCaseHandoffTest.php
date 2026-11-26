@@ -21,7 +21,7 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retire-dso-case-handoff/specs/dso-omgevingsloket/spec.md
+ * @spec openspec/specs/dso-omgevingsloket/spec.md
  */
 
 declare(strict_types=1);

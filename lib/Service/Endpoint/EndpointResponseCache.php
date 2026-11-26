@@ -22,7 +22,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\ICacheFactory;
 /**
  * Keeps, finds and clears the cached answers of an endpoint.
  *
- * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+ * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
  */
 class EndpointResponseCache {
 
@@ -106,7 +106,7 @@ class EndpointResponseCache {
 	 * @return array<string, mixed>|null ttlSeconds (int), methods (list of string), statusCodes (list of int),
 	 *                                   varyHeaders (list of string), sharedAcrossConsumers and ignoreUpstreamMaxAge (bool).
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function settings(array $endpointData): ?array {
 		$cache = ($endpointData['cache'] ?? null);
@@ -145,7 +145,7 @@ class EndpointResponseCache {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function cachesMethod(array $settings, string $method): bool {
 		return in_array(strtoupper($method), $settings['methods'], true);
@@ -160,7 +160,7 @@ class EndpointResponseCache {
 	 *
 	 * @return array{status: int, answer: array<string, mixed>}|null
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function lookup(string $endpointId, array $settings, array $request): ?array {
 		if ($this->cachesMethod(settings: $settings, method: (string)($request['method'] ?? '')) === false) {
@@ -191,7 +191,7 @@ class EndpointResponseCache {
 	 *
 	 * @return bool Whether it was kept.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function store(string $endpointId, array $settings, array $request, int $status, array $answer): bool {
 		if ($this->cachesMethod(settings: $settings, method: (string)($request['method'] ?? '')) === false
@@ -222,7 +222,7 @@ class EndpointResponseCache {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function clear(string $endpointId): void {
 		$this->cache()->set($this->generationKey(endpointId: $endpointId), self::newGeneration());
@@ -237,7 +237,7 @@ class EndpointResponseCache {
 	 *
 	 * @return int|null Seconds, or null to keep nothing.
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function lifetime(array $settings, array $headers): ?int {
 		$cacheControl = strtolower(self::header(headers: $headers, name: 'cache-control'));
@@ -274,7 +274,7 @@ class EndpointResponseCache {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
+	 * @spec openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime/spec.md#requirement-an-endpoint-can-cache-its-answers-req-rcpe-001
 	 */
 	public function key(string $endpointId, array $settings, array $request): string {
 		$headers = (array)($request['headers'] ?? []);

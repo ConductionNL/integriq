@@ -118,6 +118,10 @@ class SourceDestroyedController extends Controller {
 			return new JSONResponse($outcome, Http::STATUS_NOT_FOUND);
 		}
 
+		if ($outcome['outcome'] === SourceDestructionServiceInterface::OUTCOME_NO_OWNER) {
+			return new JSONResponse($outcome, Http::STATUS_FORBIDDEN);
+		}
+
 		return new JSONResponse($outcome);
 	}//end destroyed()
 

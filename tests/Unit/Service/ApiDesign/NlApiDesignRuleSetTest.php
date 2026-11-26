@@ -10,7 +10,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
+ * @spec openspec/changes/archive/2026-11-25-gateway-api-design-rules-check/specs/api-design-rules/spec.md#requirement-the-dutch-api-design-rules-are-built-in-req-adrc-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -159,6 +159,29 @@ class NlApiDesignRuleSetTest extends TestCase {
 			$byRule
 		);
 		$this->assertSame(['error'], array_values(array_unique(array_column($findings, 'severity'))));
-		$this->assertCount(14, $this->service->blockingFindings(findings: $findings));
+		// 14 errors, of which the four gateway-scoped ones (contact, URI version, API-Version header, TLS) do not block.
+		$this->assertCount(expectedCount: 10, haystack: $this->service->blockingFindings(findings: $findings));
 	}//end testAKnownBadDocumentFailsEachCheckedRule()
+
+	/**
+	 * The rules that judge what the gateway writes for every product are shown but never refuse activation.
+	 *
+	 * @spec openspec/changes/gateway-design-findings-do-not-block-products/specs/api-design-rules/spec.md#requirement-a-product-with-an-open-error-is-not-published-req-adrc-003
+	 *
+	 * @return void
+	 */
+	public function testGatewayScopedFindingsDoNotBlock(): void {
+		$finding = static fn (string $ruleId): array => ['ruleId' => $ruleId, 'severity' => 'error', 'status' => 'open', 'path' => '/x'];
+		$findings = [
+			$finding('/core/doc-openapi-contact'),
+			$finding('/core/uri-version'),
+			$finding('/core/version-header'),
+			$finding('/core/transport/tls'),
+			$finding('/core/no-trailing-slash'),
+		];
+
+		$blocking = $this->service->blockingFindings(findings: $findings);
+
+		$this->assertSame(expected: ['/core/no-trailing-slash'], actual: array_column($blocking, 'ruleId'));
+	}//end testGatewayScopedFindingsDoNotBlock()
 }//end class

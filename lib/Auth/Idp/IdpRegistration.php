@@ -52,6 +52,20 @@ final class IdpRegistration {
 	public const KIND_OIDC = 'oidc-rp';
 
 	/**
+	 * The subject fields a `subjectMapping` names, in the order an adapter looks
+	 * for them, with the subject type each yields.
+	 *
+	 * @var array<string, string>
+	 */
+	public const SUBJECT_TYPES = [
+		'bsn' => 'bsn',
+		'pseudonym' => SubjectPseudonymService::SUBTYPE_BSN_PSEUDONYM,
+		'kvk' => 'kvk',
+		'rsin' => 'rsin',
+		'eidasPersonIdentifier' => 'eidas-person-identifier',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string               $id           The object's uuid.

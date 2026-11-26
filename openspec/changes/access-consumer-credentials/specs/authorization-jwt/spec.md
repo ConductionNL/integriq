@@ -1,10 +1,3 @@
-# authorization-jwt Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- access-consumer-credentials
-
 ## Purpose
 
 An endpoint can require a client certificate and can accept any one of several login methods. Rows `integriq:acc-mtls-in` and `integriq:acc-multi-auth`.

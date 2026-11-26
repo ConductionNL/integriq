@@ -9,7 +9,7 @@
  * through the portal key routes. A pinned client certificate is the
  * administrator's and is not listed.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-manages-the-keys-of-their-own-application-req-devp-003
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -273,6 +273,18 @@ describe('ConsumerCredentialsPanel', () => {
 		expect(panel.props('credentialsUrl')).toBe(CONSUMER_URL)
 		expect(panel.props('administrator')).toBe(true)
 		expect(get).toHaveBeenCalledWith(CONSUMER_URL)
+	})
+
+	it('keeps the panel test id when the detail page passes its own data-testid down', async () => {
+		// CnBodySections mounts a body widget with `data-testid="cn-body-section-component-<id>"`;
+		// that attribute lands on the wrapper and must not overwrite `credential-keys`.
+		const wrapper = mount(ConsumerCredentialsPanel, {
+			attrs: { 'data-testid': 'cn-body-section-component-con-credentials' },
+			global: { provide: { cnSectionContext: { value: { objectId: 'c-1', object: {} } } } },
+		})
+		await flushPromises()
+
+		expect(wrapper.find('[data-testid="credential-keys"]').exists()).toBe(true)
 	})
 
 	it('renders nothing before the consumer is known', () => {

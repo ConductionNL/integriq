@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\IUserSession;
 /**
  * Resolves a message's recipients without sending.
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
  */
 class OutboundRecipientsController extends Controller {
 
@@ -54,7 +54,7 @@ class OutboundRecipientsController extends Controller {
 	 * @param RecipientResolver $recipientResolver The send's own resolution.
 	 * @param IL10N             $l                 Translations.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
 	 */
 	public function __construct(
 		$appName,
@@ -78,7 +78,7 @@ class OutboundRecipientsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-resolved-list-is-shown-before-the-send-req-mrs-005
 	 */
 	#[NoAdminRequired]
 	public function preview(): JSONResponse {

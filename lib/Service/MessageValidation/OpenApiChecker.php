@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +38,7 @@ use Symfony\Component\Yaml\Yaml;
  * remote one is reported, not fetched. OpenAPI 3.0 `nullable` is rewritten
  * to a JSON Schema type union before the check.
  *
- * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+ * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ValidationOutcome's named constructors build a value object;
  *   Yaml::parse is the library's only entry point.
@@ -72,7 +72,7 @@ class OpenApiChecker {
 	 *
 	 * @return ValidationOutcome
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	public function check(string $document, mixed $payload, array $context): ValidationOutcome {
 		$openApi = self::parse(document: $document);
@@ -109,7 +109,7 @@ class OpenApiChecker {
 	 *
 	 * @throws InvalidArgumentException When a reference cannot be resolved.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	private static function schemaOf(OpenApiReferenceResolver $references, mixed $holder): mixed {
 		$holder = $references->resolve(node: $holder);
@@ -133,7 +133,7 @@ class OpenApiChecker {
 	 *
 	 * @return string|null The parser's message.
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-a-message-schema-is-stored-once-and-referenced-req-msv-001
 	 */
 	public function documentProblem(string $document): ?string {
 		$openApi = json_decode($document, false);
@@ -204,7 +204,7 @@ class OpenApiChecker {
 	 *
 	 * @return array<string, stdClass>
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	private static function operationsOf(stdClass $pathItem): array {
 		$operations = [];
@@ -330,7 +330,7 @@ class OpenApiChecker {
 	 *
 	 * @return stdClass
 	 *
-	 * @spec openspec/changes/mapping-message-schema-validation/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
+	 * @spec openspec/specs/message-schema-validation/spec.md#requirement-an-endpoint-validates-its-request-and-its-proxied-answer-req-msv-002
 	 */
 	private static function withoutNullable(stdClass $schema): stdClass {
 		$copy = new stdClass();

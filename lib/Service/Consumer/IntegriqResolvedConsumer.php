@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 /**
  * Builds a ResolvedConsumer from an identity and an authorization, with integriq as its source.
  *
- * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+ * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
  */
 final class IntegriqResolvedConsumer {
 
@@ -44,7 +44,7 @@ final class IntegriqResolvedConsumer {
 	 *
 	 * @return ResolvedConsumer
 	 *
-	 * @spec openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
+	 * @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006
 	 */
 	public function fromRecord(array $who, ?string $authorizationType, array $configuration, mixed $record): ResolvedConsumer {
 		return new ResolvedConsumer(

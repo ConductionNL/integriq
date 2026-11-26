@@ -1,10 +1,3 @@
-# data-infra-connectors Specification
-
-**Status**: proposed
-**Scope**: integriq
-**OpenSpec changes**:
-- sources-sftp-adapter
-
 ## Purpose
 
 A partner's SFTP or FTPS server is a source: files are listed, fetched, delivered, moved and deleted, and a pickup runs on a schedule. Row `integriq:src-sftp`. The adapter follows the category contract REQ-DIC-001 to REQ-DIC-006.

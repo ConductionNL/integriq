@@ -114,6 +114,8 @@ class ObjectenApiControllerTest extends TestCase {
 			}
 		);
 		$request->method('getServerHost')->willReturn('example.nl');
+		$request->method('getServerProtocol')->willReturn('https');
+		$request->method('getRequestUri')->willReturn('/index.php/apps/integriq/api/v2/objects');
 
 		return $request;
 	}//end request()
@@ -263,8 +265,11 @@ class ObjectenApiControllerTest extends TestCase {
 			params: ['record' => ['data' => ['straatnaam' => 'Kerkstraat']]]
 		);
 
-		$this->assertSame(201, $this->controller(request: $request)->createObject()->getStatus());
-		$this->assertSame('leverancier', $this->written[0]['principal']);
+		$answer = $this->controller(request: $request)->createObject();
+		$this->assertSame(expected: 201, actual: $answer->getStatus());
+		$this->assertSame(expected: 'leverancier', actual: $this->written[0]['principal']);
+		// The record's url is absolute, under the API's own route.
+		$this->assertSame(expected: 'https://example.nl/index.php/apps/integriq/api/v2/objects/new-1', actual: $answer->getData()['url']);
 	}//end testACreateIsAttributedToTheTokensPrincipal()
 
 	/**

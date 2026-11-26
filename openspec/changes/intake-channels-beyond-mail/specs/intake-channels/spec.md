@@ -142,14 +142,17 @@ The intake inbox page MUST offer two row actions to a handler with the `intake.a
 - WHEN a handler picks "Toewijzen aan zaak" on its row and chooses a case
 - THEN the message and its attachments are linked to that case
 - AND the row shows the case and who assigned it
+- e2e: `tests/e2e/intake-channels.spec.ts`
 
 #### Scenario: a handler answers from the inbox
 - GIVEN a WhatsApp message in the inbox
 - WHEN a handler picks "Beantwoorden" and sends a short text
 - THEN the reply leaves over WhatsApp to the same correspondent and is recorded
+- e2e: `tests/e2e/intake-channels.spec.ts`
 
 #### Scenario: a reader without the right sees no actions
 - GIVEN a user who may read the inbox but has neither action right
 - WHEN they open the inbox
 - THEN no assign or reply action is shown
+- e2e: `tests/e2e/intake-channels.spec.ts`
 

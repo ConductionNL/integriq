@@ -39,7 +39,7 @@ Kind: code. Size M. Row `buildiq:int-per-user-oauth`.
 Task 1 is built: `credentialRef` accepts `{"provider": "<slug>", "perUser": true}`, and `BrokeredCallService::prepare()` resolves it to the signed-in user's own enabled personal credential at that provider, with no fallback. A sessionless call is refused, no account raises `PerUserAccountNotConnectedException` (carrying the provider for task 2), and two accounts are refused rather than guessed. The source schema moves to 1.5.0. Task 2 is built (pass 2): `CallService` lets `PerUserAccountNotConnectedException` through instead of logging it as a 409 configuration error, and `EndpointService` answers it with `ConnectAccountPrompt`: 401, type `connect-account-required`, the provider, and `connectUrl` at OpenRegister's `credentialOauth2#start` for a personal account, with the caller's Referer as `returnUrl`. Task 3 is built (pass 3) as a section of the app's settings dialog instead of a personal settings page, with the per-user option on the source form.
 
 ## Verification
-- [ ] `openspec validate sources-per-user-oauth --type change --strict` passes
+- [x] `openspec validate sources-per-user-oauth --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [x] No token value appears in any integriq object, log or response, asserted in a test
   - `BrokeredCallServiceTest::testNoTokenValueReachesAnObjectALogOrTheAnswer`: a per-user call is prepared and dispatched against a broker that holds the token; the prepared call, the broker request, every log line and the answer carry the credential id at most, and integriq never asks the broker for the raw token.
 - [ ] PHPUnit, Newman and Playwright run, exit codes read

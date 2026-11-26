@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md
+ * Spec coverage: openspec/specs/api-product-gateway/spec.md
  * (REQ-DEVP-004, subscribers are told when a product they use changes; the
  * Playwright half of task 4 in that change's tasks.md: "one notification
  * observed in the Nextcloud notifications list").

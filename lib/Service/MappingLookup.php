@@ -57,6 +57,13 @@ class MappingLookup implements MappingLookupInterface {
 	private array $warnings = [];
 
 	/**
+	 * The most objects `lookupAll()` answers with.
+	 *
+	 * @var integer
+	 */
+	public const MAX_ALL = 200;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LookupAllowlist               $allowlist     The schemas that may be read.
@@ -87,22 +94,11 @@ class MappingLookup implements MappingLookupInterface {
 	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
 	 */
 	public function lookup(string $schema, array $filters, string $field, mixed $default = null): mixed {
-		if ($this->allowlist->allows(schema: $schema) === false) {
-			throw new RuntimeException(
-				message: sprintf('lookup() may not read "%s": it is not on the lookup allowlist an administrator keeps.', $schema)
-			);
-		}
-
-		ksort($filters);
-		foreach ($filters as $name => $value) {
-			if (is_scalar($value) === false && $value !== null) {
-				throw new RuntimeException(message: sprintf('lookup() on "%s": the filter "%s" must be a single value.', $schema, (string)$name));
-			}
-		}
+		$filters = $this->guard(function: 'lookup', schema: $schema, filters: $filters);
 
 		$question = $schema . '|' . json_encode($filters);
 		if (array_key_exists($question, $this->answers) === false) {
-			$this->answers[$question] = $this->find(schema: $schema, filters: $filters);
+			$this->answers[$question] = $this->find(schema: $schema, filters: $filters, limit: 2);
 		}
 
 		$matches = $this->answers[$question];
@@ -121,6 +117,77 @@ class MappingLookup implements MappingLookupInterface {
 	}//end lookup()
 
 	/**
+	 * The field of every object matching the filters, in the order OpenRegister returns them.
+	 *
+	 * For a question about a set rather than one row: "has this employee any
+	 * assignment that has not ended". An object without the field contributes
+	 * null, so a missing end date stays visible as "no end". More
+	 * matches than the limit refuse the mapping instead of answering from a
+	 * partial list, because a set read short could make an open row look
+	 * absent (staff-timetable-sync REQ-HRS-004: never act on a partial read).
+	 *
+	 * @param string              $schema  The schema, as `register/schema`.
+	 * @param array<string,mixed> $filters Property filters; values must be scalar.
+	 * @param string              $field   The field to return per object, a dot path.
+	 * @param integer             $limit   The most objects answered, at most MAX_ALL.
+	 *
+	 * @return list<mixed>
+	 *
+	 * @throws RuntimeException When the schema is not allowed, a filter is not scalar, more objects match than the limit, or OpenRegister is missing.
+	 *
+	 * @spec openspec/specs/staff-timetable-sync/spec.md#requirement-a-new-or-departing-employee-reaches-untis-without-a-manual-step-req-hrs-001
+	 */
+	public function lookupAll(string $schema, array $filters, string $field, int $limit = self::MAX_ALL): array {
+		$filters = $this->guard(function: 'lookupAll', schema: $schema, filters: $filters);
+		$limit   = max(1, min($limit, self::MAX_ALL));
+
+		$question = 'all|' . $limit . '|' . $schema . '|' . json_encode($filters);
+		if (array_key_exists($question, $this->answers) === false) {
+			$this->answers[$question] = $this->find(schema: $schema, filters: $filters, limit: ($limit + 1));
+		}
+
+		$matches = $this->answers[$question];
+		if (count($matches) > $limit) {
+			$asked = (string)json_encode($filters);
+			throw new RuntimeException(
+				message: sprintf('lookupAll() on "%s" found more than %d objects for %s; it does not answer from a partial list.', $schema, $limit, $asked)
+			);
+		}
+
+		return array_map(static fn (array $match): mixed => (new Dot($match))->get($field), $matches);
+	}//end lookupAll()
+
+	/**
+	 * Refuse a schema off the allowlist or a filter that is not one value; the filters sorted.
+	 *
+	 * @param string              $function The mapping function asking, for the message.
+	 * @param string              $schema   The schema, as `register/schema`.
+	 * @param array<string,mixed> $filters  The filters.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws RuntimeException When the schema is not allowed or a filter is not scalar.
+	 *
+	 * @spec openspec/changes/archive/2026-11-24-mapping-formats-and-lookups/specs/mapping-and-search/spec.md#requirement-a-mapping-can-look-up-a-value-in-an-allowed-register-schema-req-mfl-004
+	 */
+	private function guard(string $function, string $schema, array $filters): array {
+		if ($this->allowlist->allows(schema: $schema) === false) {
+			throw new RuntimeException(
+				message: sprintf('%s() may not read "%s": it is not on the lookup allowlist an administrator keeps.', $function, $schema)
+			);
+		}
+
+		ksort($filters);
+		foreach ($filters as $name => $value) {
+			if (is_scalar($value) === false && $value !== null) {
+				throw new RuntimeException(message: sprintf('%s() on "%s": the filter "%s" must be a single value.', $function, $schema, (string)$name));
+			}
+		}
+
+		return $filters;
+	}//end guard()
+
+	/**
 	 * The warnings recorded in this run.
 	 *
 	 * @return list<string>
@@ -132,18 +199,19 @@ class MappingLookup implements MappingLookupInterface {
 	}//end warnings()
 
 	/**
-	 * At most two matches: enough to tell one from several.
+	 * At most `$limit` matches: two tell one from several, limit + 1 tells a whole list from a cut one.
 	 *
 	 * Read in system context: the allowlist above is the gate.
 	 *
 	 * @param string              $schema  The schema, as `register/schema`.
 	 * @param array<string,mixed> $filters The filters.
+	 * @param integer             $limit   The most rows read.
 	 *
 	 * @return list<array<string, mixed>>
 	 *
 	 * @throws RuntimeException When OpenRegister is not installed.
 	 */
-	private function find(string $schema, array $filters): array {
+	private function find(string $schema, array $filters, int $limit): array {
 		$openRegister = $this->objectService->getOpenRegisters();
 		if ($openRegister === null) {
 			throw new RuntimeException(message: 'lookup() needs OpenRegister, which is not installed.');
@@ -151,7 +219,7 @@ class MappingLookup implements MappingLookupInterface {
 
 		[$register, $slug] = explode('/', $schema, 2);
 		$found = $openRegister->findAll(
-			config: ['filters' => (['register' => $register, 'schema' => $slug] + $filters), 'limit' => 2],
+			config: ['filters' => (['register' => $register, 'schema' => $slug] + $filters), 'limit' => $limit],
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -167,6 +235,6 @@ class MappingLookup implements MappingLookupInterface {
 			}
 		}
 
-		return array_slice($rows, 0, 2);
+		return array_slice($rows, 0, $limit);
 	}//end find()
 }//end class

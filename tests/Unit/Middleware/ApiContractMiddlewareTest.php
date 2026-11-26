@@ -138,6 +138,21 @@ class ApiContractMiddlewareTest extends TestCase {
 	}//end testConflictingOrListBodiesAreLeftAlone()
 
 	/**
+	 * A JSON-RPC error, such as an mcp endpoint's per-tool limit refusal, keeps its own format.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime/spec.md#requirement-a-tool-can-have-its-own-rate-limit-req-mcpx-003
+	 */
+	public function testJsonRpcErrorsKeepTheirFormat(): void {
+		$body     = ['jsonrpc' => '2.0', 'id' => 6, 'error' => ['code' => -32000, 'message' => 'rate limit reached for tool search']];
+		$response = $this->decorate(path: '/apps/integriq/api/endpoint/mcp/example', response: new JSONResponse(data: $body, statusCode: 429));
+
+		$this->assertSame(expected: $body, actual: $response->getData());
+		$this->assertSame(expected: 'application/json; charset=utf-8', actual: $this->headersOf(response: $response)['Content-Type']);
+	}//end testJsonRpcErrorsKeepTheirFormat()
+
+	/**
 	 * A body that already is problem details is kept, and an empty body gets the members.
 	 *
 	 * @return void

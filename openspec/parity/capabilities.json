@@ -2150,9 +2150,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/EndpointCacheService.php (the only class with 'Cache' in the name for endpoints) caches the endpoint CONFIG list for path/method matching (getAllEndpoints/refreshCache/findByPathRegex), not response bodies; no Cache-Control/ETag/TTL field exists on the endpoint schema (grep '\"cache' lib/Settings/integriq_register.json returns 0); no Cache-Control handling found in EndpointService.php or EndpointsController.php. Specified in openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-response-cache-and-problem-errors",
-				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: An endpoint can cache its answers (REQ-RCPE-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "EndpointCacheService is a routing-lookup cache, easy to mistake for a response cache from its name alone, it never caches an endpoint's answer.",
@@ -2583,9 +2583,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
+				"evidence": "grep -rn \"problem\\+json|application/problem\" lib/ src/ returns 0 hits; error responses seen in lib/Service/EndpointService.php (e.g. transformError(), the 400/404/429 JSONResponse bodies) use ad-hoc {\"error\": ...} or {\"error\", \"message\", \"reason\"} shapes, never RFC 7807 application/problem+json. Specified in openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-response-cache-and-problem-errors",
-				"requirement": "openspec/changes/gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-response-cache-and-problem-errors/specs/endpoint-runtime :: Every gateway error is a problem document (REQ-RCPE-002)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -3039,9 +3039,8 @@
 				"owner": "ConductionNL/integriq",
 				"evidence": "lib/Service/Consumer/OpenRegisterCredentialBridge.php:120 authorizeJwt() and :155 authorizeApiKey() hand the check to OpenRegister's AuthorizationService (DECISIONS 56, 62, 64; integriq's own AuthorizationService was removed by 441f67de on 5 Oct), passing lib/Service/Consumer/IntegriqConsumerSource.php, whose resolve() (:137-168) gives OpenRegister the consumer's userId; OpenRegister then makes that Nextcloud user act for the request, and the bridge clears the volatile user again when integriq's lifetime cap refuses the token (:136). A rule-inline apiKey map key => uid (:155, $keys) does the same for rule keys.",
 				"spec": "openspec/specs/consumer-management",
-				"change": "consumer-auth-on-openregister",
 				"requirement": [
-					"openspec/changes/consumer-auth-on-openregister/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
+					"openspec/specs/authorization-jwt :: integriq consumers are checked by OpenRegister (REQ-006)",
 					"openspec/specs/authorization-jwt :: API key authorization via header-to-uid map (REQ-004)"
 				],
 				"readOn": "2026-10-30"
@@ -3202,11 +3201,11 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "openspec/features.overlay.json lists slug developer-portal with status 'soon' and no docsUrl; grep -rniF 'developer portal|devportal' across lib/ and src/ returns zero hits. The /store page (catalog_item schema) is an internal admin catalogue for installing connectors, not a public page for outside developers to discover APIs or request access. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "openspec/features.overlay.json lists slug developer-portal with status 'soon' and no docsUrl; grep -rniF 'developer portal|devportal' across lib/ and src/ returns zero hits. The /store page (catalog_item schema) is an internal admin catalogue for installing connectors, not a public page for outside developers to discover APIs or request access. Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
 				"requirement": [
-					"openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer finds the published API products (REQ-DEVP-001)",
-					"openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer requests access for their own application (REQ-DEVP-002)"
+					"openspec/specs/api-product-gateway :: A developer finds the published API products (REQ-DEVP-001)",
+					"openspec/specs/api-product-gateway :: A developer requests access for their own application (REQ-DEVP-002)"
 				]
 			},
 			"reachedOn": "nothing reaches it",
@@ -3242,9 +3241,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "grep -rniF 'self-service' across lib/ and src/ returns zero hits; every consumer credential is admin-typed via ConsumerEditorModal.vue on the admin-only /consumers page. The only key generate/rotate routes in appinfo/routes.php (lti#generateKey/#rotateKey lines 259-260, eudiIssuerKeyAdmin#generateKey/#rotateKey lines 287-288) are admin-gated, tenant-wide key management, not a per-developer self-service flow. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "grep -rniF 'self-service' across lib/ and src/ returns zero hits; every consumer credential is admin-typed via ConsumerEditorModal.vue on the admin-only /consumers page. The only key generate/rotate routes in appinfo/routes.php (lti#generateKey/#rotateKey lines 259-260, eudiIssuerKeyAdmin#generateKey/#rotateKey lines 287-288) are admin-gated, tenant-wide key management, not a per-developer self-service flow. Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
-				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A developer manages the keys of their own application (REQ-DEVP-003)"
+				"requirement": "openspec/specs/api-product-gateway :: A developer manages the keys of their own application (REQ-DEVP-003)"
 			},
 			"reachedOn": "nothing reaches it",
 			"provider": "integriq",
@@ -11614,9 +11613,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Settings/register.d/api-product-gateway.json:250-256 subscription status pending_approval, active, rejected, revoked and :282 revokedAt; no end-date property on the subscription schema (properties listed at :223-294). Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Settings/register.d/api-product-gateway.json:250-256 subscription status pending_approval, active, rejected, revoked and :282 revokedAt; no end-date property on the subscription schema (properties listed at :223-294). Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
-				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: A subscription can end on a date (REQ-DEVP-005)"
+				"requirement": "openspec/specs/api-product-gateway :: A subscription can end on a date (REQ-DEVP-005)"
 			},
 			"reachedOn": "/products/:id detail page, subscriptions section",
 			"note": "Open WSO2 API Manager request, Type/NewFeature. Integriq: A subscription can be revoked by hand; it cannot be given an end date.",
@@ -11654,9 +11653,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation and Sunset headers on calls to a deprecated product version (row gw-versioning); no message is sent to subscribed consumers. Specified in openspec/changes/access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
+				"evidence": "lib/Service/EndpointService.php:1282-1332 buildDeprecationHeaders() emits RFC 8594 Deprecation and Sunset headers on calls to a deprecated product version (row gw-versioning); no message is sent to subscribed consumers. Specified in openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/ (OpenSpec pass 2026-09-27).",
 				"change": "access-developer-portal-and-subscriptions",
-				"requirement": "openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway :: Subscribers are told when a product they use changes (REQ-DEVP-004)"
+				"requirement": "openspec/specs/api-product-gateway :: Subscribers are told when a product they use changes (REQ-DEVP-004)"
 			},
 			"reachedOn": "machine route: headers on every call to a deprecated version",
 			"note": "Open WSO2 API Manager request, API consumer notifications. Integriq: Callers learn of retirement from response headers only, not from a notice.",
@@ -11964,9 +11963,9 @@
 			"built": {
 				"state": "specified",
 				"owner": "ConductionNL/integriq",
-				"evidence": "the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); lib/Mcp does not exist, and the x-openregister-mcp declarations at lib/Settings/integriq_register.json:673,1390,1499,1828 expose integriq's own objects as read tools through OpenRegister, they do not put an outside MCP server behind keys and limits. Specified in openspec/changes/gateway-mcp-proxy/ (OpenSpec pass 2026-09-27).",
+				"evidence": "the gateway proxies HTTP endpoints only (lib/Service/EndpointService.php:2174-2266); lib/Mcp does not exist, and the x-openregister-mcp declarations at lib/Settings/integriq_register.json:673,1390,1499,1828 expose integriq's own objects as read tools through OpenRegister, they do not put an outside MCP server behind keys and limits. Specified in openspec/changes/archive/2026-11-25-gateway-mcp-proxy/ (OpenSpec pass 2026-09-27).",
 				"change": "gateway-mcp-proxy",
-				"requirement": "openspec/changes/gateway-mcp-proxy/specs/endpoint-runtime :: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)"
+				"requirement": "openspec/changes/archive/2026-11-25-gateway-mcp-proxy/specs/endpoint-runtime :: An outside MCP server is published as a gateway endpoint (REQ-MCPX-001)"
 			},
 			"reachedOn": "nothing reaches it",
 			"note": "Tyk 5.13.0 (2026-05-19) MCP gateway and 5.15.0 MCP proxies; WSO2 API Manager 4.7.0 MCP governance and analytics. Integriq: Row plt-ai-tools covers integriq's own objects as tools; proxying other MCP servers is absent.",
@@ -12108,19 +12107,19 @@
 			"source": "demand-signal",
 			"origin": "changelog",
 			"originUrl": "https://github.com/frankframework/frankframework/pull/10459",
-			"integriq": "partial",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"evidence": "lib/Service/EndpointService.php:2033-2039 a register-backed endpoint returns OpenRegister's ValidationException as a refusal when a write breaks the register schema; lib/Controller/MappingsController.php:176-186 and :278 validate a mapping result against a schema with Opis JSON Schema in the test panel; proxied traffic (lib/Service/EndpointService.php:2174-2266) is passed through unvalidated and there is no XSD or OpenAPI validator. Specified in openspec/changes/mapping-message-schema-validation/ (OpenSpec pass 2026-09-27).",
-				"change": "mapping-message-schema-validation",
+				"evidence": "lib/Service/MessageValidation/ (EndpointMessageGate, SynchronizationMessageGate, MessageValidationService with JSON Schema, XSD and OpenAPI checkers); lib/Service/EndpointService.php checks the request and the proxied answer, lib/Service/SynchronizationService.php each source object and each api target body, refuse or record. PHPUnit EndpointServiceMessageValidationTest and SynchronizationMessageValidationTest; Newman folder 18; tests/e2e/message-schema-validation.spec.ts. Archived as openspec/changes/archive/2026-11-25-mapping-message-schema-validation.",
+				"spec": "openspec/specs/message-schema-validation",
 				"requirement": [
-					"openspec/changes/mapping-message-schema-validation/specs/message-schema-validation :: An endpoint validates its request and its proxied answer (REQ-MSV-002)",
-					"openspec/changes/mapping-message-schema-validation/specs/message-schema-validation :: A synchronization validates source objects and target bodies (REQ-MSV-003)"
+					"openspec/specs/message-schema-validation :: An endpoint validates its request and its proxied answer (REQ-MSV-002)",
+					"openspec/specs/message-schema-validation :: A synchronization validates source objects and target bodies (REQ-MSV-003)"
 				]
 			},
 			"reachedOn": "/endpoints with targetType=register/schema; /mappings/:id test panel",
-			"note": "Frank!Framework 10.1.0 (2026-04-25) added an OpenAPI validator next to its XML and JSON validators. Integriq: Register writes and mapping tests are validated against JSON Schema; proxied messages, XSD and OpenAPI are not.",
+			"note": "Frank!Framework 10.1.0 (2026-04-25) added an OpenAPI validator next to its XML and JSON validators. Integriq: endpoints and synchronizations check messages against a declared JSON Schema, XSD or OpenAPI operation, in mode refuse or record.",
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "mapping-and-search",
@@ -12725,14 +12724,13 @@
 			"area": "sources",
 			"name": "Hand each file from a watched folder to an intake app such as scan intake.",
 			"source": "open-change-triage-2026-11-12",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/sources-sftp-adapter-intake-hand-over",
-				"change": "sources-sftp-adapter-intake-hand-over",
-				"requirement": "openspec/changes/sources-sftp-adapter-intake-hand-over/specs/data-infra-connectors :: A watched folder hands a file to a named intake through a typed event (REQ-SFTP-005)",
-				"evidence": "Not built: specified in openspec/changes/sources-sftp-adapter-intake-hand-over (12/12 tasks open). Part 3 of sources-sftp-adapter; depends on the watched-folder row proposed for part 2."
+				"evidence": "lib/Event/WatchedFileArrivedEvent.php, dispatched by lib/Service/WatchedFolder/WatchedFileDelivery.php for target intake; only accept() by the named intake app marks the file (#3786). Archived as openspec/changes/archive/2026-11-24-sources-sftp-adapter-intake-hand-over.",
+				"spec": "openspec/specs/data-infra-connectors",
+				"requirement": "openspec/specs/data-infra-connectors :: A watched folder hands a file to a named intake through a typed event (REQ-SFTP-005)"
 			},
 			"feature": "data-infra-connectors",
 			"featureConfidence": "medium",
@@ -12863,14 +12861,13 @@
 			"area": "connectors",
 			"name": "Keep staff and approved leave in step between the HR app and Untis.",
 			"source": "open-change-triage-2026-11-12",
-			"integriq": "no",
+			"integriq": "yes",
 			"built": {
-				"state": "specified",
+				"state": "built",
 				"owner": "ConductionNL/integriq",
-				"plan": "openspec/changes/connectors-hr-staff-sync",
-				"change": "connectors-hr-staff-sync",
-				"requirement": "openspec/changes/connectors-hr-staff-sync/specs/staff-timetable-sync :: A new or departing employee reaches Untis without a manual step (REQ-HRS-001)",
-				"evidence": "Not built: specified in openspec/changes/connectors-hr-staff-sync (10/10 tasks open). con-timetable imports a timetable; pushing HR staff and leave to Untis has no row."
+				"evidence": "lib/Settings/configurations/staff-to-untis.json (teachers from humaniq Employee and OrgAssignment, approved leave as absences, nightly reconciliation through lib/Service/Synchronization/OutboundReconciliationService.php); live pass against Untis owed (tests/e2e/staff-to-untis.spec.ts, runs in nightly). Archived as openspec/changes/archive/2026-11-25-connectors-hr-staff-sync.",
+				"spec": "openspec/specs/staff-timetable-sync",
+				"requirement": "openspec/specs/staff-timetable-sync :: A new or departing employee reaches Untis without a manual step (REQ-HRS-001)"
 			},
 			"feature": "staff-timetable-sync",
 			"featureConfidence": "medium",

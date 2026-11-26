@@ -2971,7 +2971,7 @@
                   "const s = pm.response.json();",
                   "pm.test('points at the vendor server', () => pm.expect(s.location).to.eql('https://petstore.example.test/v1'));",
                   "const conf = s.configuration || {};",
-                  "pm.test('a credential is still to be named', () => pm.expect(((conf.authentication || {}).credentialRef || {}).credentialName).to.eql(''));",
+                  "pm.test('a credential is still to be named: no broker reference yet, and the source stays disabled until one is', () => { pm.expect((conf.authentication || {}).credentialRef).to.eql(undefined); pm.expect(s.isEnabled).to.eql(false); });",
                   "pm.test('the placeholder names the scheme', () => pm.expect((conf.credentialPlaceholders || []).map((c) => c.scheme)).to.eql(['api_key']));"
                 ]
               }
@@ -3059,7 +3059,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('the answer is the mock source\\'s', () => { const b = pm.response.json(); pm.expect(b.installed).to.eql(true); pm.expect(b).to.have.property('versionstring'); });"
+                  "pm.test('the answer is the mock source\\'s', () => { const b = pm.response.json(); const body = typeof b.body === 'string' ? JSON.parse(b.body) : b.body; pm.expect(b.statusCode).to.eql(200); pm.expect(body.installed).to.eql(true); pm.expect(body).to.have.property('versionstring'); });"
                 ]
               }
             }
@@ -3128,9 +3128,7 @@
           "name": "POST /oauth/issuer-key — admin creates the signing key",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/issuer-key"
-            },
+            "url": "{{ocBase}}/oauth/issuer-key",
             "header": [
               {
                 "key": "Content-Type",
@@ -3162,9 +3160,7 @@
           "name": "GET /.well-known/jwks.json — public, the new key listed",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/jwks.json"
-            },
+            "url": "{{base_url}}/index.php/apps/integriq/.well-known/jwks.json",
             "header": [
               {
                 "key": "Content-Type",
@@ -3194,9 +3190,7 @@
           "name": "POST consumer — client credentials fixture",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{orBase}}/consumer"
-            },
+            "url": "{{orBase}}/consumer",
             "header": [
               {
                 "key": "Content-Type",
@@ -3228,9 +3222,7 @@
           "name": "POST /consumers/{id}/client-secret — shown once, not cached",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/consumers/{{fxOAuthConsumerUuid}}/client-secret"
-            },
+            "url": "{{ocBase}}/consumers/{{fxOAuthConsumerUuid}}/client-secret",
             "header": [
               {
                 "key": "Content-Type",
@@ -3262,9 +3254,7 @@
           "name": "POST /consumers/{id}/client-secret — an unknown consumer is 404",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/consumers/00000000-0000-4000-8000-000000000000/client-secret"
-            },
+            "url": "{{ocBase}}/consumers/00000000-0000-4000-8000-000000000000/client-secret",
             "header": [
               {
                 "key": "Content-Type",
@@ -3292,9 +3282,7 @@
           "name": "GET consumer — no secret or key material in the OpenRegister object",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}"
-            },
+            "url": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3321,9 +3309,7 @@
           "name": "POST /oauth/token — no client credentials is 401 invalid_client",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3357,9 +3343,7 @@
           "name": "POST /oauth/token — a wrong secret is 401 invalid_client",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3403,9 +3387,7 @@
           "name": "POST /oauth/token — another grant type is 400 unsupported_grant_type",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3449,9 +3431,7 @@
           "name": "POST /oauth/token — client credentials issues a signed JWT with the consumer's scopes",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3506,9 +3486,7 @@
           "name": "POST /oauth/token — a scope the consumer does not hold is 400 invalid_scope",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{ocBase}}/oauth/token"
-            },
+            "url": "{{ocBase}}/oauth/token",
             "header": [
               {
                 "key": "Content-Type",
@@ -3553,9 +3531,7 @@
           "name": "POST rule — token-protected fixture",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{orBase}}/rule"
-            },
+            "url": "{{orBase}}/rule",
             "header": [
               {
                 "key": "Content-Type",
@@ -3564,7 +3540,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-oauth-rule\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
+              "raw": "{\"name\": \"newman-oauth-rule\", \"action\": \"get\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
             }
           },
           "event": [
@@ -3587,9 +3563,7 @@
           "name": "POST endpoint — token-protected fixture",
           "request": {
             "method": "POST",
-            "url": {
-              "raw": "{{orBase}}/endpoint"
-            },
+            "url": "{{orBase}}/endpoint",
             "header": [
               {
                 "key": "Content-Type",
@@ -3621,9 +3595,7 @@
           "name": "GET /.well-known/oauth-protected-resource/newman-oauth — the metadata document",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-oauth"
-            },
+            "url": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-oauth",
             "header": [
               {
                 "key": "Content-Type",
@@ -3655,9 +3627,7 @@
           "name": "GET /.well-known/oauth-protected-resource/newman-fixture — nothing for an open endpoint",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-fixture"
-            },
+            "url": "{{base_url}}/index.php/apps/integriq/.well-known/oauth-protected-resource/newman-fixture",
             "header": [
               {
                 "key": "Content-Type",
@@ -3685,9 +3655,7 @@
           "name": "GET /endpoint/newman-oauth — without a token the 401 names the metadata URL",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{ocBase}}/endpoint/newman-oauth"
-            },
+            "url": "{{ocBase}}/endpoint/newman-oauth",
             "header": [
               {
                 "key": "Content-Type",
@@ -3716,9 +3684,7 @@
           "name": "DELETE endpoint — token-protected fixture",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{orBase}}/endpoint/{{fxOAuthEndpointUuid}}"
-            },
+            "url": "{{orBase}}/endpoint/{{fxOAuthEndpointUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3742,9 +3708,7 @@
           "name": "DELETE rule — token-protected fixture",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{orBase}}/rule/{{fxOAuthRuleUuid}}"
-            },
+            "url": "{{orBase}}/rule/{{fxOAuthRuleUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3768,9 +3732,7 @@
           "name": "DELETE consumer — client credentials fixture",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}"
-            },
+            "url": "{{orBase}}/consumer/{{fxOAuthConsumerUuid}}",
             "header": [
               {
                 "key": "Content-Type",
@@ -3810,7 +3772,7 @@
             "description": "objecten-api-facade: a schema of its own, so the checks touch no real data.",
             "body": {
               "mode": "raw",
-              "raw": "{\"title\":\"Newman boom\",\"slug\":\"newman-boom-{{objStamp}}\",\"properties\":{\"soort\":{\"type\":\"string\"},\"hoogte\":{\"type\":\"number\"}}}"
+              "raw": "{\"title\":\"Newman boom\",\"slug\":\"newman-boom-{{objStamp}}\",\"properties\":{\"soort\":{\"type\":\"string\"},\"hoogte\":{\"type\":\"number\"},\"geometry\":{\"type\":\"object\"}}}"
             }
           },
           "event": [
@@ -3836,7 +3798,9 @@
                   "const b = pm.response.json();",
                   "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
                   "pm.expect(id, 'the created id').to.not.be.undefined;",
-                  "pm.collectionVariables.set('objSchema', String(id));"
+                  "pm.collectionVariables.set('objSchema', String(id));",
+                  "// A register lists its schemas by numeric id; a uuid there is never resolved.",
+                  "pm.collectionVariables.set('objSchemaNumId', String(b.id || (b['@self'] && b['@self'].id)));"
                 ]
               }
             }
@@ -3855,7 +3819,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[\"{{objSchema}}\"]}"
+              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[{{objSchemaNumId}}]}"
             }
           },
           "event": [
@@ -3868,7 +3832,9 @@
                   "const b = pm.response.json();",
                   "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
                   "pm.expect(id, 'the created id').to.not.be.undefined;",
-                  "pm.collectionVariables.set('objRegister', String(id));"
+                  "pm.collectionVariables.set('objRegister', String(id));",
+                  "// OpenRegister deletes a register or schema by numeric id only.",
+                  "pm.collectionVariables.set('objRegisterNumId', String(b.id || (b['@self'] && b['@self'].id)));"
                 ]
               }
             }
@@ -3888,7 +3854,7 @@
             "description": "REQ-OAF-001: an objecttype is a schema named on purpose, under a stable published uuid.",
             "body": {
               "mode": "raw",
-              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"register\":\"newman-objecten-{{objStamp}}\",\"schema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
+              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"objectsRegister\":\"newman-objecten-{{objStamp}}\",\"objectsSchema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
             }
           },
           "event": [
@@ -3925,7 +3891,7 @@
             "description": "The token's key lives in the credential broker; the token only names the credential.",
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"]}"
+              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"], \"scope\": \"organisation\"}"
             }
           },
           "event": [
@@ -3962,7 +3928,7 @@
             "description": "The token's key lives in the credential broker; the token only names the credential.",
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"]}"
+              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"], \"scope\": \"organisation\"}"
             }
           },
           "event": [
@@ -4074,13 +4040,13 @@
           ]
         },
         {
-          "name": "Objecttypen: one objecttype carries the schema's jsonSchema",
+          "name": "Objecttypen: an allowed version carries the schema's jsonSchema",
           "request": {
             "auth": {
               "type": "noauth"
             },
             "method": "GET",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes/{{objTypeUuid}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes/{{objTypeUuid}}/versions/1",
             "header": [
               {
                 "key": "Authorization",
@@ -4096,9 +4062,8 @@
                 "exec": [
                   "pm.test('found', () => pm.response.to.have.status(200));",
                   "const b = pm.response.json();",
-                  "pm.test('its name and jsonSchema', () => {",
-                  "  pm.expect(b.name).to.eql('newman-boom');",
-                  "  pm.expect(JSON.stringify(b)).to.include('soort');",
+                  "pm.test('its jsonSchema (the objecttype lists its versions; the jsonSchema is on the version)', () => {",
+                  "  pm.expect(JSON.stringify(b.jsonSchema)).to.include('soort');",
                   "});"
                 ]
               }
@@ -4184,7 +4149,7 @@
           ]
         },
         {
-          "name": "Objecten: an objecttype the token does not name is a 403",
+          "name": "Objecten: an objecttype nobody publishes answers 404",
           "request": {
             "auth": {
               "type": "noauth"
@@ -4204,7 +4169,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('refused', () => pm.response.to.have.status(403));"
+                  "pm.test('not found (REQ-OAF-005: an unknown objecttype is a 404; a published one the token does not name is a 403, covered by Playwright)', () => pm.response.to.have.status(404));"
                 ]
               }
             }
@@ -4359,7 +4324,7 @@
               "type": "noauth"
             },
             "method": "GET",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4551,7 +4516,7 @@
               "type": "noauth"
             },
             "method": "PATCH",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4591,7 +4556,7 @@
               "type": "noauth"
             },
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4618,7 +4583,7 @@
               "type": "noauth"
             },
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4645,7 +4610,7 @@
               "type": "noauth"
             },
             "method": "GET",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4774,7 +4739,7 @@
           "name": "Teardown: delete the register",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{objRegister}}",
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{objRegisterNumId}}",
             "header": []
           },
           "event": [
@@ -4793,7 +4758,7 @@
           "name": "Teardown: delete the schema",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{objSchema}}",
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{objSchemaNumId}}",
             "header": []
           },
           "event": [
@@ -5043,9 +5008,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/api_product"
-            },
+            "url": "{{orBase}}/api_product",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"Newman channel product\", \"productSlug\": \"{{chProductSlug}}\", \"version\": \"2.0.0\", \"visibility\": \"public\", \"status\": \"active\", \"endpoints\": [], \"tiers\": {\"free\": {\"rateLimit\": {\"requestsPerWindow\": 2, \"windowSeconds\": 60}}}, \"channels\": [{\"slug\": \"publications\", \"title\": \"Publicaties\", \"types\": [\"nl.woo.publication.created\"], \"description\": \"Nieuwe Woo-publicaties\"}]}",
@@ -5096,9 +5059,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/asyncapi.json"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/asyncapi.json",
             "auth": {
               "type": "noauth"
             }
@@ -5130,9 +5091,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/newman-no-such-product/asyncapi.json"
-            },
+            "url": "{{ocBase}}/products/newman-no-such-product/asyncapi.json",
             "auth": {
               "type": "noauth"
             }
@@ -5159,9 +5118,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "noauth"
             }
@@ -5193,9 +5150,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/consumer"
-            },
+            "url": "{{orBase}}/consumer",
             "body": {
               "mode": "raw",
               "raw": "{\"name\": \"{{chConsumerName}}\", \"description\": \"newman product channel consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{chConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
@@ -5233,9 +5188,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5285,9 +5238,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/no-such-channel/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/no-such-channel/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5341,9 +5292,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/api_product_subscription"
-            },
+            "url": "{{orBase}}/api_product_subscription",
             "body": {
               "mode": "raw",
               "raw": "{\"product\": \"{{chProductUuid}}\", \"consumer\": \"{{chConsumerUuid}}\", \"tier\": \"free\", \"status\": \"active\"}",
@@ -5381,9 +5330,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5439,9 +5386,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/subscriptions"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/subscriptions",
             "body": {
               "mode": "raw",
               "raw": "{\"sink\": \"http://169.254.169.254/latest\"}",
@@ -5511,9 +5456,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events"
-            },
+            "url": "{{ocBase}}/products/{{chProductSlug}}/channels/publications/events",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -5564,9 +5507,7 @@
                 "value": "true"
               }
             ],
-            "url": {
-              "raw": "{{orBase}}/api_product/{{chProductUuid}}"
-            }
+            "url": "{{orBase}}/api_product/{{chProductUuid}}"
           },
           "event": [
             {
@@ -5598,6 +5539,571 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('product deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "19 — Consumer authentication on OpenRegister (consumer-auth-on-openregister)",
+      "description": "Task 6 of consumer-auth-on-openregister: an endpoint with a jwt rule admits an HS256 token for a seeded consumer and refuses the same token's second use and a two-hour token; an apikey rule admits a consumer key.",
+      "item": [
+        {
+          "name": "CA.1 create the JWT rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orBase}}/rule",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-jwt-rule\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"jwt\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-consumers-are-checked-by-openregister-req-006",
+                  "// Task 6 live check, written as a Newman folder: fresh names and an HS256 secret per run.",
+                  "const run = Date.now() + '-' + Math.floor(Math.random() * 1e6);",
+                  "pm.collectionVariables.set('caRun', run);",
+                  "pm.collectionVariables.set('caConsumerName', 'newman-ca-jwt-' + run);",
+                  "// Longer than the 32-byte HS256 minimum the bridge enforces.",
+                  "pm.collectionVariables.set('caConsumerSecret', 'newman-ca-' + run + '-' + CryptoJS.lib.WordArray.random(24).toString());",
+                  "pm.collectionVariables.set('caApiKey', 'newman-ca-key-' + run + '-' + CryptoJS.lib.WordArray.random(16).toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caJwtRuleUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.2 create the endpoint behind the JWT rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orBase}}/endpoint",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-jwt-endpoint\", \"endpoint\": \"newman-ca-jwt\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{caJwtRuleUuid}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caJwtEndpointUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.3 create the API-key rule with no keys of its own",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orBase}}/rule",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-apikey-rule\", \"action\": \"get\", \"timing\": \"before\", \"type\": \"authentication\", \"conditions\": {}, \"order\": 1, \"configuration\": {\"authentication\": {\"type\": \"apikey\", \"header\": \"X-Api-Key\", \"keys\": {}}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caKeyRuleUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.4 create the endpoint behind the API-key rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orBase}}/endpoint",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-apikey-endpoint\", \"endpoint\": \"newman-ca-apikey\", \"method\": \"GET\", \"targetType\": \"register/schema\", \"targetId\": \"integriq/source\", \"isEnabled\": true, \"rules\": [\"{{caKeyRuleUuid}}\"]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caKeyEndpointUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.5 seed the HS256 JWT consumer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orBase}}/consumer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"{{caConsumerName}}\", \"description\": \"newman consumer-auth-on-openregister JWT consumer\", \"authorizationType\": \"jwt\", \"authorizationConfiguration\": {\"algorithm\": \"HS256\", \"publicKey\": \"{{caConsumerSecret}}\"}, \"userId\": \"{{admin_user}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caJwtConsumerUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.6 seed the API-key consumer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orBase}}/consumer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"newman-ca-apikey-{{caRun}}\", \"description\": \"newman consumer-auth-on-openregister API-key consumer\", \"authorizationType\": \"apiKey\", \"authorizationConfiguration\": {\"apiKey\": \"{{caApiKey}}\"}, \"userId\": \"{{admin_user}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "const uuid = b.uuid || b.id || (b['@self'] && b['@self'].id) || (b.object && (b.object.uuid || b.object.id));",
+                  "pm.expect(uuid).to.be.a('string');",
+                  "pm.collectionVariables.set('caKeyConsumerUuid', uuid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.7 an HS256 token of the seeded consumer is admitted",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{ocBase}}/endpoint/newman-ca-jwt",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// A one-hour-or-less token naming the consumer as issuer, with its own jti.",
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const name = pm.collectionVariables.get('caConsumerName');",
+                  "const body = enc({ iss: name, sub: name, iat: now, nbf: now - 5, exp: now + 300, jti: 'newman-ca-' + now + '-' + Math.floor(Math.random() * 1e9) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('caConsumerSecret')));",
+                  "pm.collectionVariables.set('caJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admitted: not refused by the authentication rule', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));",
+                  "pm.test('the endpoint answered without a server error', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.8 the same token presented a second time is refused",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{ocBase}}/endpoint/newman-ca-jwt",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// OpenRegister refuses a jti it has seen before (replay).",
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('an error is named', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.9 a two-hour token is refused with the lifetime cap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{ocBase}}/endpoint/newman-ca-jwt",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{caLongJwt}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// exp = iat + 7200: valid for OpenRegister, over integriq's 3600-second cap.",
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const enc = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const now = Math.floor(Date.now() / 1000);",
+                  "const head = enc({ alg: 'HS256', typ: 'JWT' });",
+                  "const name = pm.collectionVariables.get('caConsumerName');",
+                  "const body = enc({ iss: name, sub: name, iat: now, nbf: now - 5, exp: now + 7200, jti: 'newman-ca-' + now + '-' + Math.floor(Math.random() * 1e9) });",
+                  "const sig = b64url(CryptoJS.HmacSHA256(head + '.' + body, pm.collectionVariables.get('caConsumerSecret')));",
+                  "pm.collectionVariables.set('caLongJwt', head + '.' + body + '.' + sig);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// @spec openspec/specs/authorization-jwt/spec.md#requirement-integriq-keeps-its-token-lifetime-cap-req-007",
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "const b = pm.response.json();",
+                  "pm.test('the cap message', () => pm.expect(b.error).to.eql('The token lifetime exceeds the maximum allowed duration'));",
+                  "pm.test('the cap is 3600 seconds', () => pm.expect(b.details.max_lifetime_seconds).to.eql(3600));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.10 a consumer's API key is admitted by a rule without keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "{{caApiKey}}"
+              }
+            ],
+            "url": "{{ocBase}}/endpoint/newman-ca-apikey",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admitted: not refused by the authentication rule', () => pm.expect(pm.response.code).to.not.be.oneOf([401, 403]));",
+                  "pm.test('the endpoint answered without a server error', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.11 an unknown API key is refused",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Api-Key",
+                "value": "newman-ca-no-such-key"
+              }
+            ],
+            "url": "{{ocBase}}/endpoint/newman-ca-apikey",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Invalid API key', () => pm.expect(pm.response.json().error).to.eql('Invalid API key'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.12 cleanup — DELETE API-key consumer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{orBase}}/consumer/{{caKeyConsumerUuid}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.13 cleanup — DELETE JWT consumer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{orBase}}/consumer/{{caJwtConsumerUuid}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.14 cleanup — DELETE API-key endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{orBase}}/endpoint/{{caKeyEndpointUuid}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.15 cleanup — DELETE API-key rule",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{orBase}}/rule/{{caKeyRuleUuid}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.16 cleanup — DELETE JWT endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{orBase}}/endpoint/{{caJwtEndpointUuid}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CA.17 cleanup — DELETE JWT rule",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{orBase}}/rule/{{caJwtRuleUuid}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
                 ]
               }
             }

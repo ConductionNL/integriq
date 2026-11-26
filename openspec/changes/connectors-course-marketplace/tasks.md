@@ -21,7 +21,8 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
   - GIVEN the mock catalogue WHEN the synchronization runs with one collection selected THEN only that collection's courses are written
 - [x] Implement
   - The source cites `GET https://gateway.go1.com/learning-objects` (`type[]=course`, `limit` at most 50, `offset`, answer `total` + `hits`) and OAuth 2.0 client credentials at `https://auth.go1.com/oauth/token`. The selection is the synchronizations' `conditions`. A Go1 collection filter is not pinned: the published parameter for it was not confirmed, so a collection selection is a condition on the course until it is.
-- [ ] Test (`tests/e2e/course-marketplace.spec.ts` against the mock source)
+- [x] Test (`tests/e2e/course-marketplace.spec.ts` against the mock source)
+  - 2026-11-25 live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 43ba16d9): `tests/e2e/course-marketplace.spec.ts` 3/3 (each provider ships a source, three mappings and three synchronizations; the demo data carries one deployment per provider on its own tool; a run without its deployment stops before fetching and says what to set). Needs integriq#3983: before it, the example data went into duplicate schemas and the demo-dependent test skipped.
   - PHPUnit half: `CourseMarketplaceSetsTest`. The e2e run needs the mock source of Task 6 and a live instance.
   - `tests/e2e/course-marketplace.spec.ts` is written for what an instance shows without a provider catalogue: the three sets imported, one demo deployment per provider, and Task 4's refused run. The one-collection run still needs a mock catalogue the instance can reach.
 
@@ -43,7 +44,8 @@ Kind: code. Size M. Row `learniq:cont-outside-provider-catalogue`. Depends on
 - [x] Implement
   - The set is built: `GET https://<portal>.udemy.com/api-2.0/organizations/<portal-id>/courses/list/`, paged by `page`/`page_size`, HTTP Basic with the client id and secret.
   - The guard: every marketplace synchronization (all three providers, course, lesson and placement) declares `sourceConfig.requiredMappingValues`, naming the provider's placement mapping and its `openconnectorDeploymentId`. `RunPrerequisiteGuard` (`lib/Service/Synchronization/`) reads it in `synchronizeExternToIntern()` right after the source check: with the value empty the run stops before any fetch, the run log's message names the provider's `lti_deployment` and the mapping to set it in, and nothing is written. A synchronization that declares nothing runs as before. Tests: `RunPrerequisiteGuardTest` over the real fragment (nine synchronizations, with and without the deployment, a missing mapping, a malformed declaration) and `SynchronizationServiceRunPrerequisiteTest` (the real engine with the real guard over the seeded Udemy Business course synchronization: no provider call, no write, the saved log names the deployment; with it set, the run fetches).
-- [ ] Test (`tests/e2e/course-marketplace.spec.ts`)
+- [x] Test (`tests/e2e/course-marketplace.spec.ts`)
+  - 2026-11-25 live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 43ba16d9): `tests/e2e/course-marketplace.spec.ts` 3/3 (each provider ships a source, three mappings and three synchronizations; the demo data carries one deployment per provider on its own tool; a run without its deployment stops before fetching and says what to set). Needs integriq#3983: before it, the example data went into duplicate schemas and the demo-dependent test skipped.
   - Written: the spec's third test runs the Udemy Business course synchronization through the run route without its deployment and asserts the log names `openconnectorDeploymentId`, the placement mapping and that nothing was fetched or written. Left: running it on an instance.
 
 ### Task 5: Retire withdrawn courses

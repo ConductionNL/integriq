@@ -118,6 +118,36 @@ class EndpointCacheServiceTest extends TestCase {
 		$this->assertNull($service->findByPathRegex(path: 'api/klanten', method: 'DELETE', isRetry: true));
 	}//end testACachedRowResolvesWithoutAskingOpenRegisterAndBecomesAnEntity()
 
+	/**
+	 * A cached endpoint keeps its uuid and organisation, so keys and boundaries built from them hold.
+	 *
+	 * @return void
+	 */
+	public function testACachedEndpointKeepsItsUuidAndOrganisation(): void {
+		$this->stored['integriq_endpoints_cache'] = [
+			[
+				'@self' => ['id' => '1b2c3d4e-0000-4000-8000-00000000000a', 'organisation' => 'org-a', 'register' => '26', 'schema' => '30', 'owner' => 'admin'],
+				'name' => 'tools a', 'endpoint' => 'tools/a', 'method' => 'POST',
+			],
+			[
+				'@self' => ['id' => '1b2c3d4e-0000-4000-8000-00000000000b', 'organisation' => null],
+				'name' => 'tools b', 'endpoint' => 'tools/b', 'method' => 'POST',
+			],
+		];
+		$service = $this->service();
+
+		$a = $service->findByPathRegex(path: 'tools/a', method: 'POST');
+		$b = $service->findByPathRegex(path: 'tools/b', method: 'POST');
+
+		$this->assertSame(expected: '1b2c3d4e-0000-4000-8000-00000000000a', actual: $a->getUuid());
+		$this->assertSame(expected: 'org-a', actual: $a->getOrganisation());
+		$this->assertSame(expected: '26', actual: (string)$a->getRegister());
+		$this->assertSame(expected: '30', actual: (string)$a->getSchema());
+		$this->assertSame(expected: 'admin', actual: $a->getOwner());
+		$this->assertSame(expected: '1b2c3d4e-0000-4000-8000-00000000000b', actual: $b->getUuid(), message: 'Two cached endpoints never share a uuid.');
+		$this->assertNull(actual: $b->getOrganisation(), message: 'A missing organisation stays missing.');
+	}//end testACachedEndpointKeepsItsUuidAndOrganisation()
+
 	public function testNoMatchRefreshesOnceAndThenGivesUp(): void {
 		$this->stored['integriq_endpoints_cache'] = [['name' => 'stale', 'endpoint' => 'api/oud', 'method' => 'GET']];
 		$this->objects->expects($this->once())->method('findAll')->willReturn([$this->endpoint('nieuw', 'api/nieuw', 'GET')]);

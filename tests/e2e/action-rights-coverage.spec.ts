@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/platform-action-rights-coverage/specs/action-authorization/spec.md
+ * Spec coverage: openspec/changes/archive/2026-11-25-platform-action-rights-coverage/specs/action-authorization/spec.md
  *
  * The action authorization screen lists every enforced action under its area,
  * a delegated adapter push lets a member through and refuses a non-member,
@@ -49,7 +49,9 @@ async function as(baseURL: string, user: { username: string, password: string })
 	return pwRequest.newContext({
 		baseURL,
 		storageState: { cookies: [], origins: [] },
-		httpCredentials: user,
+		// `send: 'always'`: Nextcloud answers an unauthenticated OCS call 401 without a
+		// Basic challenge, so credentials sent only on a challenge are never sent.
+		httpCredentials: { ...user, send: 'always' },
 		extraHTTPHeaders: { 'OCS-APIRequest': 'true', Accept: 'application/json' },
 	})
 }
