@@ -186,7 +186,15 @@ final class FilePickupTest extends TestCase {
 			public function __construct(private array &$events) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Record the store and close the stream, as a store that consumes it does.
+			 *
+			 * @param string   $folder The target folder.
+			 * @param string   $name   The file name.
+			 * @param resource $stream The file contents.
+			 *
+			 * @return string The stored path.
+			 */
 			public function store(string $folder, string $name, $stream): string {
 				$this->events[] = 'store ' . $name;
 				fclose($stream);
@@ -197,8 +205,8 @@ final class FilePickupTest extends TestCase {
 
 		$result = $this->pickup()->run(source: [], config: $config, store: $closing, seen: [], now: self::NOW);
 
-		$this->assertSame(['moved', 'moved', 'moved'], array_column($result['picked'], 'after'));
-		$this->assertCount(3, $result['seen']);
+		$this->assertSame(expected: ['moved', 'moved', 'moved'], actual: array_column($result['picked'], 'after'));
+		$this->assertCount(expectedCount: 3, haystack: $result['seen']);
 	}//end testAStoreThatClosesTheStreamStillArchivesTheFile()
 
 	/**
