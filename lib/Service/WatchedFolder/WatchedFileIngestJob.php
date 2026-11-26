@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Integriq\Service\WatchedFolder;
 
+use OCA\Integriq\Service\SystemWrite;
 use OCA\Integriq\Service\WatchedFolderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -75,7 +76,15 @@ class WatchedFileIngestJob extends QueuedJob {
 		}
 
 		try {
-			$this->service->ingest(synchronizationId: $synchronizationId, fileId: $fileId);
+			// A queued job runs in cron with nobody signed in and names no user, so it
+			// acts as the system (decision 25 Nov 2026: integriq jobs without a userId
+			// run in OpenRegister's SystemOperationContext). Without it OpenRegister
+			// refused the synchronization contract to 'Anonymous' after the target
+			// object was written, and the file never left the watched folder.
+			SystemWrite::run(
+				what: 'a watched file ingest',
+				operation: fn (): string => $this->service->ingest(synchronizationId: $synchronizationId, fileId: $fileId)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error('integriq: watched file ' . $fileId . ' could not be ingested: ' . $e->getMessage(), ['exception' => $e]);
 		}
