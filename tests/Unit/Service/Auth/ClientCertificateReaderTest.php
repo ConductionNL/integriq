@@ -49,7 +49,10 @@ final class ClientCertificateReaderTest extends TestCase {
 	 */
 	private function reader(array $server, string $header = '', array $proxies = ['10.0.0.0/8'], string $name = 'X-SSL-Client-Cert'): ClientCertificateReader {
 		$request = $this->createMock(IRequest::class);
-		$request->method('getEnv')->willReturnCallback(static fn (string $key): mixed => ($server[$key] ?? null));
+		// The web server's variables are in $_SERVER; IRequest::getEnv() reads $_ENV and must not be used.
+		// A mock with a dynamic `server` property, not a hand-written IRequest: see EndpointsControllerTest::buildController().
+		$request->server = $server;
+		$request->expects($this->never())->method('getEnv');
 		$request->method('getHeader')->willReturnCallback(
 			static fn (string $asked): string => ($asked === $name ? $header : '')
 		);
