@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.1
+ * @spec openspec/changes/archive/2026-11-26-dso-attachments-on-the-request/tasks.md#task-1.1
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  * but the schema lacks is silently lost on save. These tests read the
  * register the way InitializeRegister imports it.
  *
- * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
+ * @spec openspec/specs/dso-omgevingsloket/spec.md#requirement-bijlagen-download-and-storage-req-dso-005
  */
 class DsoVerzoekAttachmentsSchemaTest extends TestCase {
 
@@ -101,7 +101,7 @@ class DsoVerzoekAttachmentsSchemaTest extends TestCase {
 	/**
 	 * The "bijlage ontbreekt" flag is a declared boolean.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-bijlage-download-retried-and-flagged-on-failure
 	 *
 	 * @return void
 	 */
