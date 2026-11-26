@@ -255,7 +255,12 @@ class FilePickup {
 			$result['failed'][] = ['name' => $file->name, 'reason' => $exception->getMessage()];
 			return $result;
 		} finally {
-			fclose($stream);
+			// Nextcloud's Folder::newFile() consumes the stream and closes it; closing
+			// it again threw a TypeError after the write, so the file was stored but
+			// never archived or remembered, and the next run stored it once more.
+			if (is_resource($stream) === true) {
+				fclose($stream);
+			}
 		}
 
 		$result['seen'][$file->name] = $file->version();
