@@ -46,7 +46,7 @@ class WatchedFileIngestJobSystemContextTest extends TestCase {
 	 */
 	public function testTheIngestRunsAsTheSystem(): void {
 		$seen = [];
-		$service = $this->createMock(WatchedFolderService::class);
+		$service = $this->createMock(originalClassName: WatchedFolderService::class);
 		$service->expects($this->once())->method('ingest')
 			->with('sync-1', 42)
 			->willReturnCallback(static function () use (&$seen): string {
@@ -55,12 +55,16 @@ class WatchedFileIngestJobSystemContextTest extends TestCase {
 			});
 
 		self::runJob(
-			job: new WatchedFileIngestJob($this->createMock(ITimeFactory::class), $service, $this->createMock(LoggerInterface::class)),
+			job: new WatchedFileIngestJob(
+				time: $this->createMock(originalClassName: ITimeFactory::class),
+				service: $service,
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
+			),
 			argument: ['fileId' => 42, 'synchronizationId' => 'sync-1']
 		);
 
 		$this->assertSame(expected: [true], actual: $seen);
-		$this->assertFalse(SystemOperationContext::isActive(), 'the elevation ends with the ingest');
+		$this->assertFalse(condition: SystemOperationContext::isActive(), message: 'the elevation ends with the ingest');
 	}//end testTheIngestRunsAsTheSystem()
 
 	/**
@@ -69,11 +73,15 @@ class WatchedFileIngestJobSystemContextTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnIncompleteJobIngestsNothing(): void {
-		$service = $this->createMock(WatchedFolderService::class);
+		$service = $this->createMock(originalClassName: WatchedFolderService::class);
 		$service->expects($this->never())->method('ingest');
 
 		self::runJob(
-			job: new WatchedFileIngestJob($this->createMock(ITimeFactory::class), $service, $this->createMock(LoggerInterface::class)),
+			job: new WatchedFileIngestJob(
+				time: $this->createMock(originalClassName: ITimeFactory::class),
+				service: $service,
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
+			),
 			argument: ['fileId' => 42]
 		);
 	}//end testAnIncompleteJobIngestsNothing()
