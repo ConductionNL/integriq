@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md
+ * Spec coverage: openspec/specs/api-product-gateway/spec.md
  *
  * The developer portal as its users meet it. Two developers and one account
  * outside the developer group are made through the provisioning API by the

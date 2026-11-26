@@ -8,7 +8,7 @@ import { translate as t } from '@nextcloud/l10n'
  *
  * @param {string} kind The kind.
  * @return {string} The translated label, or the kind itself when unknown.
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
  */
 export function noticeKindLabel(kind) {
 	const labels = {
@@ -26,7 +26,7 @@ export function noticeKindLabel(kind) {
  *
  * @param {object|Array} data The answer: `{results}` or a list.
  * @return {Array<object>} The notices.
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
  */
 export function noticesOf(data) {
 	const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []

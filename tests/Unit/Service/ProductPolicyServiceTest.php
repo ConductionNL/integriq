@@ -150,7 +150,7 @@ class ProductPolicyServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
 	 */
 	public function testASubscriptionHasEndedOnlyOnceItsEndDateHasPassed(): void {
 		$policy = new ProductPolicyService(orObjectService: $this->createMock(ORObjectService::class), logger: $this->createMock(LoggerInterface::class));

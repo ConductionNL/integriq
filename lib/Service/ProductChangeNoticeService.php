@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d5-the-change-notice-is-an-object-with-a-declared-notification
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d5-the-change-notice-is-an-object-with-a-declared-notification
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Tells the owners of active subscriptions that a product they use changed.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
  */
 class ProductChangeNoticeService {
 
@@ -66,7 +66,7 @@ class ProductChangeNoticeService {
 	 * @param IL10N           $l               Translates the notice text.
 	 * @param LoggerInterface $logger          The logger.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d5-the-change-notice-is-an-object-with-a-declared-notification
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d5-the-change-notice-is-an-object-with-a-declared-notification
 	 */
 	public function __construct(
 		private readonly OrObjectService $orObjectService,
@@ -88,7 +88,7 @@ class ProductChangeNoticeService {
 	 *
 	 * @return string|null `retired`, `deprecated`, `sunset-date-set` or null.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function kindFor(array $old, array $new): ?string {
 		$oldStatus = (string)($old['status'] ?? '');
@@ -118,7 +118,7 @@ class ProductChangeNoticeService {
 	 *
 	 * @return int The number of notices written.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function notifySubscribers(ObjectEntity $product, string $kind): int {
 		$data = $product->getObject();
@@ -150,7 +150,7 @@ class ProductChangeNoticeService {
 	 *
 	 * @return int The number of notices written.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function notifyNewVersion(ObjectEntity $newProduct): int {
 		$data = $newProduct->getObject();
@@ -187,7 +187,7 @@ class ProductChangeNoticeService {
 	 *
 	 * @return ObjectEntity|null The notice, or null when the subscription has no owner to tell.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
 	 */
 	public function notifyExpiring(ObjectEntity $subscription, ObjectEntity $product, string $expiresAt): ?ObjectEntity {
 		$message = $this->message(
@@ -216,7 +216,7 @@ class ProductChangeNoticeService {
 	 *
 	 * @return string The translated message.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function message(string $kind, string $productName, string $date, string $version): string {
 		return match (true) {
@@ -295,7 +295,7 @@ class ProductChangeNoticeService {
 	 *
 	 * @return string|null The Nextcloud user id, or null when there is none.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
 	 */
 	public function recipientOf(ObjectEntity $subscription): ?string {
 		$data = $subscription->getObject();

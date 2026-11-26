@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\IUser;
 /**
  * Reads and judges membership of the developer group.
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
  */
 class DeveloperPortalAccess {
 
@@ -59,7 +59,7 @@ class DeveloperPortalAccess {
 	 * @param IAppConfig    $appConfig    The app configuration.
 	 * @param IGroupManager $groupManager The group manager.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
@@ -72,7 +72,7 @@ class DeveloperPortalAccess {
 	 *
 	 * @return string The group id.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 	 */
 	public function group(): string {
 		$group = trim($this->appConfig->getValueString(AppIdentity::APP_ID, self::CONFIG_KEY, self::DEFAULT_GROUP));
@@ -90,7 +90,7 @@ class DeveloperPortalAccess {
 	 *
 	 * @return bool True for a member of the developer group.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
 	 */
 	public function isDeveloper(IUser $user): bool {
 		return $this->groupManager->isInGroup($user->getUID(), $this->group());
@@ -104,7 +104,7 @@ class DeveloperPortalAccess {
 	 *
 	 * @return int|null The member count.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#risks
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#risks
 	 */
 	public function memberCount(): ?int {
 		$group = $this->groupManager->get($this->group());

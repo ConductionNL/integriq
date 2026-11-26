@@ -319,7 +319,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
 	 */
 	public function testAnEndedSubscriptionIsRefusedNamingItsEndDate(): void {
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
@@ -351,7 +351,7 @@ class EndpointServiceTierPolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function testARetiredProductAnswersGone(): void {
 		$endpoint = ObjectServiceMockBuilder::objectEntity($this, ['method' => 'GET'], 'endpoint-uuid-1');
