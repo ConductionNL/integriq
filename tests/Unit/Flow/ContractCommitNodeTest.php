@@ -26,6 +26,7 @@ use OCA\Integriq\Flow\ContractCommitNode;
 use OCA\Integriq\Flow\FlowNodeSupport;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationContractService;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -339,6 +340,55 @@ class ContractCommitNodeTest extends TestCase {
 	}//end testCommitsThePageInOneBulkCall()
 
 	/**
+	 * The same page reports its committed/skipped/failed tally onto the run log.
+	 *
+	 * Mirrors ContractSweepNodeTest's assertion of the context's report handle:
+	 * the counts go through `FlowStepReport`, never the emitted items, so a
+	 * flow run's Logs tab shows them independently of what any single item's
+	 * `json.contract` carries.
+	 *
+	 * @return void
+	 */
+	public function testReportsCommittedAndSkippedCounts(): void {
+		$this->givenOwner();
+
+		$this->contractService->method('persistBulk')->willReturnArgument(0);
+
+		$report = new FlowStepReport();
+		$this->node->execute(
+			[
+				[
+					'json' => [
+						'uuid' => 'obj-1',
+						'contract' => ['outcome' => 'create', 'originId' => 'o-1', 'originHash' => 'h-1'],
+					],
+				],
+				[
+					'json' => [
+						'uuid' => 'obj-2',
+						'contract' => [
+							'outcome' => 'update',
+							'originId' => 'o-2',
+							'originHash' => 'h-2',
+							'contractUuid' => 'c-2',
+							'targetId' => 't-2',
+						],
+					],
+				],
+				['json' => ['uuid' => 'obj-3', 'contract' => ['outcome' => 'skip', 'originId' => 'o-3', 'originHash' => 'h-3']]],
+				['json' => ['uuid' => 'obj-4']],
+			],
+			['synchronization' => 'demo-sync'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			['commit' => ['committed' => 2, 'skipped' => 2, 'failed' => 0]],
+			$report->take()
+		);
+	}//end testReportsCommittedAndSkippedCounts()
+
+	/**
 	 * A page of skips makes no service call and passes every item through.
 	 *
 	 * @return void
@@ -426,6 +476,41 @@ class ContractCommitNodeTest extends TestCase {
 		$this->assertTrue($out[1]['json']['contract']['committed']);
 
 	}//end testUpdateWithoutContractUuidContinuesWithErrorState()
+
+	/**
+	 * A payload-build failure under `continue` reports as `failed`, not silently dropped.
+	 *
+	 * Same fixture as testUpdateWithoutContractUuidContinuesWithErrorState(): the
+	 * caught {@see FlowNodeException} must still be visible on the run log, even
+	 * though the item itself carries on with error state instead of raising.
+	 *
+	 * @return void
+	 */
+	public function testReportsFailedCountOnCaughtPayloadError(): void {
+		$this->givenOwner();
+
+		$this->contractService->method('persistBulk')->willReturnArgument(0);
+
+		$report = new FlowStepReport();
+		$this->node->execute(
+			[
+				['json' => ['uuid' => 'obj-1', 'contract' => ['outcome' => 'update', 'originId' => 'o-1']]],
+				[
+					'json' => [
+						'uuid' => 'obj-2',
+						'contract' => ['outcome' => 'create', 'originId' => 'o-2', 'originHash' => 'h-2'],
+					],
+				],
+			],
+			['synchronization' => 'demo-sync', 'onError' => 'continue'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			['commit' => ['committed' => 1, 'skipped' => 0, 'failed' => 1]],
+			$report->take()
+		);
+	}//end testReportsFailedCountOnCaughtPayloadError()
 
 	/**
 	 * An empty `targetHashPosition` is rejected at save, like its siblings.

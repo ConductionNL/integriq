@@ -26,6 +26,7 @@ use OCA\Integriq\Flow\ContractMatchNode;
 use OCA\Integriq\Flow\FlowOwner;
 use OCA\Integriq\Service\SynchronizationContractService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -352,6 +353,69 @@ class ContractMatchNodeTest extends TestCase {
 		$this->assertSame('invalid', $out[3]['json']['contract']['outcome']);
 
 	}//end testOneBulkLookupDecidesTheWholePage()
+
+	/**
+	 * Regression coverage: every item already gets a decision stamped on it
+	 * (`outcome`), but nothing tallied the page's split, so a flow run's log
+	 * carried no way to know how many records were valid versus skipped or
+	 * invalid.
+	 */
+	public function testItReportsTheOutcomeTallyForThePage(): void {
+		$this->givenOwner();
+
+		$unchangedJson = ['id' => 'o-1', 'b' => 2, 'a' => 1];
+
+		$this->contractService->method('findAllObjects')->willReturn(
+			[
+				$this->contractObject(
+					uuid: 'c-1',
+					payload: [
+						'uuid' => 'c-1',
+						'originId' => 'o-1',
+						'originHash' => $this->hashOf($unchangedJson),
+						'targetId' => 't-1',
+						'targetHash' => 'th-1',
+					]
+				),
+				$this->contractObject(
+					uuid: 'c-2',
+					payload: [
+						'uuid' => 'c-2',
+						'originId' => 'o-2',
+						'originHash' => 'stale-hash',
+						'targetId' => 't-2',
+						'targetHash' => 'th-2',
+					]
+				),
+			]
+		);
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			[
+				['json' => $unchangedJson],
+				['json' => ['id' => 'o-2', 'value' => 'new']],
+				['json' => ['id' => 'o-3', 'value' => 'fresh']],
+				['json' => ['value' => 'no id here']],
+			],
+			['synchronization' => 'demo-sync'],
+			$this->context() + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'contract' => [
+					'create' => ['count' => 1],
+					'update' => ['count' => 1],
+					'skip' => ['count' => 1],
+					'invalid' => ['count' => 1],
+				],
+			],
+			$report->take()
+		);
+
+	}//end testItReportsTheOutcomeTallyForThePage()
 
 	/**
 	 * An equal hash on a contract without a completed target side is `update`.

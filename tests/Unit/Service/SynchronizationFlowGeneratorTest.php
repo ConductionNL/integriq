@@ -255,7 +255,6 @@ class SynchronizationFlowGeneratorTest extends TestCase {
 				'openregister.set-fields',
 				ContractCommitNode::NODE_ID,
 				ContractSweepNode::NODE_ID,
-				'openregister.end',
 			],
 			array_column($flow['nodes'], 'type')
 		);
