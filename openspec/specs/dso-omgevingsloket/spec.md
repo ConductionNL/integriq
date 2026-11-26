@@ -217,13 +217,13 @@ The adapter MUST handle unmapped activiteiten gracefully: creating a zaak with a
 
 ### Requirement: Automatic Zaak Creation (REQ-DSO-020)
 
-The adapter MUST automatically create a zaak in Procest for each received DSO-verzoek. The zaak includes all parsed data: aanvrager mapped to the zaak (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum set to DSO-verzoek indieningsdatum, linked bijlagen, and the original DSO-verzoek reference (verzoekId, bronorganisatie).
+Each received DSO-verzoek that integriq has mapped MUST become exactly one zaak, created automatically by the case system from the mapped `dso_verzoek`. Integriq prepares the verzoek (parsed data, `mappedCaseTypes`, attachments) and MUST NOT create the zaak itself. The zaak MUST carry the parsed data and the original DSO-verzoek reference, as the first scenario lists.
 
-@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+@e2e exclude backend DSO/Omgevingsloket STAM integration, covered by PHPUnit, not browser UI
 
 #### Scenario: Parsed vergunningaanvraag creates fully populated zaak
-- **WHEN** a valid vergunningaanvraag is received and parsed and the adapter creates the zaak in Procest
-- **THEN** the zaak has: zaaktype from the activiteiten-mapping, aanvrager from the verzoek, locatie with BAG-adres and geometrie, startdatum equal to indieningsdatum, all bijlagen linked, and verzoekId stored as external reference
+- **WHEN** a valid vergunningaanvraag is received, parsed and mapped, and the case system reads the mapped verzoek
+- **THEN** the zaak has: zaaktype from the activiteiten-mapping, aanvrager from the verzoek (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum equal to indieningsdatum, all bijlagen linked, and verzoekId and bronorganisatie stored as external reference
 
 #### Scenario: KVK-registered bedrijf mapped to bedrijf fields
 - **WHEN** the verzoek aanvrager is a KVK-registered bedrijf and the zaak is created
@@ -458,3 +458,17 @@ The DSO connection settings in the Integriq admin section MUST let an administra
 - **WHEN** an administrator opens the DSO connection settings
 - **THEN** the section reads "No account set: DSO-LV pushes are refused with 503"
 - @e2e tests/e2e/dso-connection-settings.spec.ts
+
+### Requirement: No case handoff from a DSO verzoek (REQ-DSO-021)
+
+The `dso_verzoek` schema MUST declare no `x-openregister-handoff`, and integriq MUST expose no endpoint that hands a verzoek off to a case. A verzoek MUST NOT become a second zaak through integriq once the case system has made one.
+
+@e2e exclude backend schema declaration and route table; covered by DsoVerzoekDeclaresNoCaseHandoffTest and the live run, no browser surface
+
+#### Scenario: The retired handoff endpoint is called
+- **WHEN** a signed-in user posts to `/apps/integriq/api/dso/verzoeken/{id}/handoff`
+- **THEN** no route answers it and no zaak is created
+
+#### Scenario: OpenRegister lists the handoffs of a verzoek
+- **WHEN** a client asks OpenRegister for the handoffs of a `dso_verzoek`
+- **THEN** none is declared, so none can be executed
