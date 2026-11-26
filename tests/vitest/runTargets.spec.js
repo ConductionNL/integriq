@@ -165,12 +165,20 @@ describe('flow status classification', () => {
 		})
 	})
 
-	it('reports failed/stopped/dead_letter as an error, preferring the engine message', () => {
-		expect(status({ status: 'failed', error: 'step "write" threw' })).toEqual({
+	it('reports failed/stopped/dead_letter as a generic error', () => {
+		// The flow_run itself never carries an `error` field — only a
+		// `flow_run_log` entry does (FlowRunnerService::appendLog()) — so there
+		// is nothing on `payload` to prefer here. "View full log" is how the
+		// user gets the per-step detail.
+		expect(status({ status: 'failed' })).toEqual({
 			type: 'error',
-			text: 'step "write" threw',
+			text: 'The flow did not complete.',
 		})
 		expect(status({ status: 'stopped' })).toEqual({
+			type: 'error',
+			text: 'The flow did not complete.',
+		})
+		expect(status({ status: 'dead_letter' })).toEqual({
 			type: 'error',
 			text: 'The flow did not complete.',
 		})
@@ -181,6 +189,45 @@ describe('flow status classification', () => {
 			type: 'warning',
 			text: 'The run returned no result.',
 		})
+	})
+})
+
+describe('flow sections', () => {
+	const { sections } = getRunDescriptor('flow', 'run')
+
+	it('renders status, trigger source, started and finished from the real flow_run fields', () => {
+		const run = sections({
+			status: 'completed',
+			triggerSource: 'manual',
+			startedAt: '2026-11-01T10:00:00+00:00',
+			finishedAt: '2026-11-01T10:00:05+00:00',
+		}).find((section) => section.id === 'run')
+
+		expect(run.value).toEqual([
+			{ label: 'Status', value: 'completed' },
+			{ label: 'Trigger source', value: 'manual' },
+			{ label: 'Started', value: '2026-11-01T10:00:00+00:00' },
+			{ label: 'Finished', value: '2026-11-01T10:00:05+00:00' },
+		])
+	})
+
+	it('returns nothing for a null payload', () => {
+		expect(sections(null)).toEqual([])
+	})
+})
+
+describe('flow payloadFromError — recovering a 500 flow_run body', () => {
+	const { payloadFromError } = getRunDescriptor('flow', 'run')
+
+	it('recovers the flow_run when the error body is one', () => {
+		const err = { response: { data: { status: 'failed', triggerSource: 'manual' } } }
+		expect(payloadFromError(err)).toEqual({ status: 'failed', triggerSource: 'manual' })
+	})
+
+	it('returns null for a body with no status, so the generic error message is used', () => {
+		expect(payloadFromError({ response: { data: { message: 'boom' } } })).toBeNull()
+		expect(payloadFromError({ response: { data: null } })).toBeNull()
+		expect(payloadFromError({})).toBeNull()
 	})
 })
 
