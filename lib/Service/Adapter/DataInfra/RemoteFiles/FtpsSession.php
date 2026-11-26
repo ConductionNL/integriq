@@ -157,10 +157,169 @@ final class FtpsSession implements RemoteFileSession {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listDirectory(string $directory): array {
-		$answer = $this->request(path: rtrim($directory, '/') . '/', options: [CURLOPT_CUSTOMREQUEST => 'MLSD', CURLOPT_RETURNTRANSFER => true]);
+		$folder = rtrim($directory, '/') . '/';
+		try {
+			$answer = $this->request(path: $folder, options: [CURLOPT_CUSTOMREQUEST => 'MLSD', CURLOPT_RETURNTRANSFER => true]);
+			return self::parseMlsd(answer: (string)$answer);
+		} catch (RemoteFileException) {
+			// MLSD is optional (RFC 3659); vsftpd, for one, answers 500. LIST is in every server.
+		}
 
-		return self::parseMlsd(answer: (string)$answer);
+		$entries = self::parseList(
+			answer: (string)$this->request(path: $folder, options: [CURLOPT_RETURNTRANSFER => true]),
+			now: time()
+		);
+		foreach ($entries as $index => $entry) {
+			if ($entry['isDirectory'] === false) {
+				$entries[$index]['modifiedAt'] = $this->modifiedTimeOf(path: $folder . $entry['name']) ?? $entry['modifiedAt'];
+			}
+		}
+
+		return $entries;
 	}//end listDirectory()
+
+	/**
+	 * Parse a LIST answer into entries: the Unix `ls -l` layout most servers send, and the
+	 * MS-DOS layout of IIS. LIST times have minutes at best, so listDirectory() asks MDTM for
+	 * the exact time of each file.
+	 *
+	 * @param string $answer The raw LIST lines.
+	 * @param int    $now    The current Unix time; a Unix line without a year is in the last twelve months.
+	 *
+	 * @return list<array{name: string, size: int|null, modifiedAt: int|null, isDirectory: bool}>
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	public static function parseList(string $answer, int $now): array {
+		$entries = [];
+		$lines = preg_split('/\r?\n/', $answer);
+		if ($lines === false) {
+			return [];
+		}
+
+		foreach ($lines as $line) {
+			$entry = self::unixListEntry(line: $line, now: $now) ?? self::dosListEntry(line: $line);
+			if ($entry === null || $entry['name'] === '.' || $entry['name'] === '..') {
+				continue;
+			}
+
+			$entries[] = $entry;
+		}
+
+		return $entries;
+	}//end parseList()
+
+	/**
+	 * One Unix-layout LIST line (`-rw-r--r-- 1 owner group 1204 Nov 14 07:25 name`), or null.
+	 * Symbolic links and other special entries are left out: a pickup reads plain files.
+	 *
+	 * @param string $line The line.
+	 * @param int    $now  The current Unix time.
+	 *
+	 * @return array{name: string, size: int|null, modifiedAt: int|null, isDirectory: bool}|null
+	 */
+	private static function unixListEntry(string $line, int $now): ?array {
+		$pattern = '/^([d-])[rwxsStT-]{9}\S*\s+\d+\s+\S+\s+\S+\s+(\d+)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{1,2}:\d{2}|\d{4})\s(.+)$/';
+		if (preg_match($pattern, $line, $match) !== 1) {
+			return null;
+		}
+
+		return [
+			'name'        => $match[6],
+			'size'        => (int)$match[2],
+			'modifiedAt'  => self::unixListTime(month: $match[3], day: (int)$match[4], yearOrTime: $match[5], now: $now),
+			'isDirectory' => $match[1] === 'd',
+		];
+	}//end unixListEntry()
+
+	/**
+	 * The time of a Unix LIST line, in UTC. `HH:MM` means within the last twelve months, so a
+	 * date later than tomorrow belongs to last year.
+	 *
+	 * @param string $month      The month abbreviation.
+	 * @param int    $day        The day of the month.
+	 * @param string $yearOrTime `HH:MM` or a four-digit year.
+	 * @param int    $now        The current Unix time.
+	 *
+	 * @return int|null
+	 */
+	private static function unixListTime(string $month, int $day, string $yearOrTime, int $now): ?int {
+		$months = ['jan' => 1, 'feb' => 2, 'mar' => 3, 'apr' => 4, 'may' => 5, 'jun' => 6, 'jul' => 7, 'aug' => 8, 'sep' => 9, 'oct' => 10, 'nov' => 11, 'dec' => 12];
+		$number = $months[strtolower($month)] ?? null;
+		if ($number === null) {
+			return null;
+		}
+
+		if (str_contains($yearOrTime, ':') === false) {
+			return gmmktime(0, 0, 0, $number, $day, (int)$yearOrTime);
+		}
+
+		[$hour, $minute] = array_map('intval', explode(':', $yearOrTime));
+		$year = (int)gmdate('Y', $now);
+		$time = gmmktime($hour, $minute, 0, $number, $day, $year);
+		if ($time > $now + 86400) {
+			$time = gmmktime($hour, $minute, 0, $number, $day, $year - 1);
+		}
+
+		return $time;
+	}//end unixListTime()
+
+	/**
+	 * One MS-DOS-layout LIST line (`11-14-26  07:25AM  1204 name` or `<DIR>`), or null.
+	 *
+	 * @param string $line The line.
+	 *
+	 * @return array{name: string, size: int|null, modifiedAt: int|null, isDirectory: bool}|null
+	 */
+	private static function dosListEntry(string $line): ?array {
+		$pattern = '/^(\d{2})-(\d{2})-(\d{2,4})\s+(\d{1,2}):(\d{2})(AM|PM)?\s+(<DIR>|\d+)\s+(.+)$/i';
+		if (preg_match($pattern, $line, $match) !== 1) {
+			return null;
+		}
+
+		$year = (int)$match[3];
+		if ($year < 100) {
+			$year += 2000;
+		}
+
+		$hour     = (int)$match[4];
+		$meridiem = strtoupper($match[6]);
+		if ($meridiem !== '') {
+			$hour = ($hour % 12) + (int)($meridiem === 'PM') * 12;
+		}
+
+		$isDirectory = strtoupper($match[7]) === '<DIR>';
+
+		return [
+			'name'        => $match[8],
+			'size'        => $isDirectory === true ? null : (int)$match[7],
+			'modifiedAt'  => gmmktime($hour, (int)$match[5], 0, (int)$match[1], (int)$match[2], $year),
+			'isDirectory' => $isDirectory,
+		];
+	}//end dosListEntry()
+
+	/**
+	 * The exact modification time of a file (MDTM), or null when the server does not answer it.
+	 *
+	 * @param string $path The server path of the file.
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	private function modifiedTimeOf(string $path): ?int {
+		try {
+			$time = $this->transfer(path: $path, options: [CURLOPT_NOBODY => true, CURLOPT_FILETIME => true, CURLOPT_RETURNTRANSFER => true])['fileTime'];
+		} catch (RemoteFileException) {
+			return null;
+		}
+
+		if ($time < 0) {
+			return null;
+		}
+
+		return $time;
+	}//end modifiedTimeOf()
 
 	/**
 	 * {@inheritDoc}
@@ -238,6 +397,21 @@ final class FtpsSession implements RemoteFileSession {
 	 * @throws RemoteFileException When the request fails; the message names the curl error, never the password.
 	 */
 	private function request(string $path, array $options): string|bool {
+		return $this->transfer(path: $path, options: $options)['result'];
+	}//end request()
+
+	/**
+	 * One curl request against the server, TLS required and verified, with the file time
+	 * curl read (MDTM) when CURLOPT_FILETIME was asked for.
+	 *
+	 * @param string            $path    The server path.
+	 * @param array<int, mixed> $options Extra curl options.
+	 *
+	 * @return array{result: string|bool, fileTime: int} The transfer result; fileTime -1 when unknown.
+	 *
+	 * @throws RemoteFileException When the request fails; the message names the curl error, never the password.
+	 */
+	private function transfer(string $path, array $options): array {
 		$handle = curl_init();
 		if ($handle === false) {
 			throw new RemoteFileException('The FTPS connection could not be prepared.');
@@ -259,13 +433,14 @@ final class FtpsSession implements RemoteFileSession {
 			] + $options
 		);
 
-		$result = curl_exec($handle);
-		$error  = curl_error($handle);
+		$result   = curl_exec($handle);
+		$error    = curl_error($handle);
+		$fileTime = (int)curl_getinfo($handle, CURLINFO_FILETIME);
 		curl_close($handle);
 		if ($result === false) {
 			throw new RemoteFileException('The FTPS server ' . $this->server->host . ' refused the request for "' . $path . '": ' . $error);
 		}
 
-		return $result;
-	}//end request()
+		return ['result' => $result, 'fileTime' => $fileTime];
+	}//end transfer()
 }//end class
