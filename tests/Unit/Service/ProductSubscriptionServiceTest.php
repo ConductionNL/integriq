@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d3-request-access-reuses-the-approval-flow
  */
 
 declare(strict_types=1);
