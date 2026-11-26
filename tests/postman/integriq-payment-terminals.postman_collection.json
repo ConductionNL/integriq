@@ -1,0 +1,402 @@
+{
+	"info": {
+		"name": "Integriq — point-of-sale terminal list (messaging-payment-command-settlements-and-point-of-sale)",
+		"description": "Newman test of task 4 of openspec/changes/messaging-payment-command-settlements-and-point-of-sale (REQ-LPP-009): `GET /api/payments/sources/{slug}/terminals` answers an administrator with the source's terminals (none on the `log` provider), an unknown source with 404, a signed-in user without the `payments.create` action with 403, and an anonymous caller with 401.\n\nIt creates the payment source through OpenRegister and the user through the OCS provisioning API, and deletes both in teardown. Run it with tests/postman/integriq.postman_environment.json. The Mollie side (a real terminal list) needs a Mollie key and openregister#11310's allow-rules; it is not in this collection.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "ocBase",
+			"value": "{{base_url}}/index.php/apps/integriq/api"
+		},
+		{
+			"key": "orBase",
+			"value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq"
+		},
+		{
+			"key": "posSourceUuid",
+			"value": ""
+		},
+		{
+			"key": "posClerkPassword",
+			"value": ""
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Nextcloud's CSRF check refuses a basic-auth call that also carries the session cookie Newman keeps.",
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' })"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "0. Setup",
+			"item": [
+				{
+					"name": "PT.1 a payment source on the log provider",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{orBase}}/source",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"source"
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"newman-pos-log\", \"slug\": \"newman-pos-log\", \"type\": \"payment\", \"isEnabled\": true, \"location\": \"log://payments\", \"configuration\": {\"provider\": \"log\"}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+									"pm.collectionVariables.set('posSourceUuid', id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PT.2 a user without payments.create",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/ocs/v1.php/cloud/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ocs",
+								"v1.php",
+								"cloud",
+								"users"
+							]
+						},
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "userid",
+									"value": "newman-pos-clerk"
+								},
+								{
+									"key": "password",
+									"value": "{{posClerkPassword}}"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// A fresh strong password per run; the user is deleted again in teardown.",
+									"pm.collectionVariables.set('posClerkPassword', 'Pos-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12) + '!');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "1. The terminal list",
+			"item": [
+				{
+					"name": "PT.3 an administrator lists the terminals of a source",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/payments/sources/newman-pos-log/terminals",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"payments",
+								"sources",
+								"newman-pos-log",
+								"terminals"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"pm.test('a terminals list; the log provider has none', () => pm.expect(pm.response.json().terminals).to.eql([]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PT.4 an unknown source is 404",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/payments/sources/newman-no-such-source/terminals",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"payments",
+								"sources",
+								"newman-no-such-source",
+								"terminals"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('404', () => pm.response.to.have.status(404));",
+									"pm.test('not_found', () => pm.expect(pm.response.json().error).to.eql('not_found'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PT.5 a user without payments.create is refused",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/payments/sources/newman-pos-log/terminals",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"payments",
+								"sources",
+								"newman-pos-log",
+								"terminals"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "newman-pos-clerk",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{posClerkPassword}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Only the clerk's basic auth may speak here: the jar still holds the administrator's session cookie.",
+									"pm.cookies.jar().clear(pm.environment.get('base_url'), () => {});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('403', () => pm.response.to.have.status(403));",
+									"pm.test('no terminals in the answer', () => pm.expect(pm.response.text()).to.not.include('\"terminals\"'));",
+									"// Newman keeps the clerk's session cookie and would send it with every later call; drop it.",
+									"pm.cookies.jar().clear(pm.environment.get('base_url'), () => {});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PT.6 an anonymous caller is refused",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{ocBase}}/payments/sources/newman-pos-log/terminals",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"payments",
+								"sources",
+								"newman-pos-log",
+								"terminals"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "9. Teardown",
+			"item": [
+				{
+					"name": "PT.7 cleanup — DELETE the source",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/source/{{posSourceUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"source",
+								"{{posSourceUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PT.8 cleanup — DELETE the user",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/ocs/v1.php/cloud/users/newman-pos-clerk",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ocs",
+								"v1.php",
+								"cloud",
+								"users",
+								"newman-pos-clerk"
+							]
+						},
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
