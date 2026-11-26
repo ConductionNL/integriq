@@ -99,14 +99,14 @@ final class FtpListing {
 		$number = $index + 1;
 
 		if (str_contains($yearOrTime, ':') === false) {
-			return self::utcTime(hour: 0, minute: 0, month: $number, day: $day, year: (int)$yearOrTime);
+			return self::utcTime(year: (int)$yearOrTime, month: $number, day: $day, minuteOfDay: 0);
 		}
 
 		[$hour, $minute] = array_map('intval', explode(':', $yearOrTime));
 		$year = (int)gmdate('Y', $now);
-		$time = self::utcTime(hour: $hour, minute: $minute, month: $number, day: $day, year: $year);
+		$time = self::utcTime(year: $year, month: $number, day: $day, minuteOfDay: ($hour * 60) + $minute);
 		if ($time !== null && $time > $now + 86400) {
-			$time = self::utcTime(hour: $hour, minute: $minute, month: $number, day: $day, year: $year - 1);
+			$time = self::utcTime(year: $year - 1, month: $number, day: $day, minuteOfDay: ($hour * 60) + $minute);
 		}
 
 		return $time;
@@ -115,16 +115,15 @@ final class FtpListing {
 	/**
 	 * A UTC time to the minute, or null when it cannot be made.
 	 *
-	 * @param int $hour   The hour.
-	 * @param int $minute The minute.
-	 * @param int $month  The month.
-	 * @param int $day    The day of the month.
-	 * @param int $year   The year.
+	 * @param int $year        The year.
+	 * @param int $month       The month.
+	 * @param int $day         The day of the month.
+	 * @param int $minuteOfDay Minutes since midnight.
 	 *
 	 * @return int|null
 	 */
-	private static function utcTime(int $hour, int $minute, int $month, int $day, int $year): ?int {
-		$time = gmmktime($hour, $minute, 0, $month, $day, $year);
+	private static function utcTime(int $year, int $month, int $day, int $minuteOfDay): ?int {
+		$time = gmmktime(intdiv($minuteOfDay, 60), $minuteOfDay % 60, 0, $month, $day, $year);
 		if ($time === false) {
 			return null;
 		}
@@ -165,7 +164,7 @@ final class FtpListing {
 		return [
 			'name'        => $match[8],
 			'size'        => $size,
-			'modifiedAt'  => self::utcTime(hour: $hour, minute: (int)$match[5], month: (int)$match[1], day: (int)$match[2], year: $year),
+			'modifiedAt'  => self::utcTime(year: $year, month: (int)$match[1], day: (int)$match[2], minuteOfDay: ($hour * 60) + (int)$match[5]),
 			'isDirectory' => $isDirectory,
 		];
 	}//end dosListEntry()
