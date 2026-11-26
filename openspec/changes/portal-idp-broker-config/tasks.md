@@ -152,6 +152,7 @@ the flag is `1`.
   - GIVEN the Newman collection WHEN run THEN it covers a SAML and an OIDC round trip through the stubs, metadata 200, 404 and 503, and RBAC on `idpRegistration`
 - [ ] Implement
 - [ ] Test
+  - STATE 26 Nov 2026: `tests/postman/idp-broker.postman_collection.json` is written and ran green twice in a row, 50/50 assertions, on a sandbox NC 34.0 with MariaDB, OpenRegister main and integriq development. It covers OIDC client metadata 200 (no `jwks_uri`, no secret), an unreadable SAML signing credential 503 that names no credential, a disabled registration, an unknown organisation, an unknown provider and a secret-based JWKS all 404 (or 429 once misses are throttled), the administrator's list and Test, and refusals for a plain user (list, Test, create, read, change; the registration is unchanged afterwards) and an anonymous caller. A Yivi SAML save is refused (422, naming the OIDC bridge). Still open, so both boxes stay unticked: the SAML and OIDC round trips through stub identity providers. This build refuses every start and callback before a live adapter is reached (see the header of `tests/e2e/idp-assurance-floor.spec.ts`).
 
 ### Task 13: Documentation and the catalogue entry
 - **spec_ref**: `openspec/specs/digid-eherkenning-auth-adapter/spec.md#requirement-configuration-placement-follows-adr-017-rules-1-3-7`
