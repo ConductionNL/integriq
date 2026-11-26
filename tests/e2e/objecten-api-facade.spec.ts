@@ -78,7 +78,24 @@ async function create(
 		body.uuid ?? body.id ?? body['@self']?.uuid ?? body['@self']?.id ?? '',
 	)
 	expect(id, `created ${path} must carry an id`).not.toEqual('')
-	cleanup.unshift(`${path}/${id}`)
+	// OpenRegister deletes a register or schema by numeric id only.
+	const byNumber = /\/(registers|schemas)$/.test(path) && Number.isInteger(Number(body.id))
+	cleanup.unshift(`${path}/${byNumber ? body.id : id}`)
+	return id
+}
+
+/**
+ * The numeric id of something stored in OpenRegister.
+ *
+ * @param request The admin request context.
+ * @param path    The stored item's path.
+ * @return The numeric id.
+ */
+async function numericId(request: APIRequestContext, path: string): Promise<number> {
+	const res = await request.get(path, { headers: await adminHeaders(request) })
+	expect(res.status(), `read ${path}`).toBe(200)
+	const id = Number((await res.json()).id)
+	expect(Number.isInteger(id), `${path} has a numeric id`).toBe(true)
 	return id
 }
 
@@ -116,20 +133,24 @@ test.describe('objecten-api-facade', () => {
 		await create(req, `${OR_API}/registers`, {
 			title: 'E2E objecten',
 			slug: REGISTER,
-			schemas: [schemaA, schemaB],
+			// A register lists its schemas by numeric id; a uuid there is never resolved.
+			schemas: [
+				await numericId(req, `${OR_API}/schemas/${schemaA}`),
+				await numericId(req, `${OR_API}/schemas/${schemaB}`),
+			],
 		})
 		await create(req, `${OR_OBJECTS}/objecttype`, {
 			publishedUuid: typeA,
 			name: 'e2e-melding',
-			register: REGISTER,
-			schema: SCHEMA_A,
+			objectsRegister: REGISTER,
+			objectsSchema: SCHEMA_A,
 			versions: ['1', '2'],
 		})
 		await create(req, `${OR_OBJECTS}/objecttype`, {
 			publishedUuid: typeB,
 			name: 'e2e-boom',
-			register: REGISTER,
-			schema: SCHEMA_B,
+			objectsRegister: REGISTER,
+			objectsSchema: SCHEMA_B,
 		})
 
 		const readCredential = await create(req, `${OR_API}/credentials`, {
@@ -137,12 +158,18 @@ test.describe('objecten-api-facade', () => {
 			provider: 'generic-apikey',
 			secret: READ_KEY,
 			allowedApps: ['openconnector'],
+			// A counterparty's request has no session: only an organisation
+			// credential, read as the token's principal, can be resolved.
+			scope: 'organisation',
 		})
 		const writeCredential = await create(req, `${OR_API}/credentials`, {
 			name: `e2e-objecten-write-${STAMP}`,
 			provider: 'generic-apikey',
 			secret: WRITE_KEY,
 			allowedApps: ['openconnector'],
+			// A counterparty's request has no session: only an organisation
+			// credential, read as the token's principal, can be resolved.
+			scope: 'organisation',
 		})
 		const principal = process.env.NC_USER || 'admin'
 		await create(req, `${OR_OBJECTS}/objecten_token`, {

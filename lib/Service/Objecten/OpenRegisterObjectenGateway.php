@@ -96,7 +96,10 @@ class OpenRegisterObjectenGateway {
 	public function tokens(): ObjectenTokenService {
 		$tokens = new ObjectenTokenService(
 			objecttypes: $this->registry(),
-			credentialRead: fn (string $reference): ?string => $this->access->readCredential(reference: $reference)
+			credentialRead: fn (string $reference, string $principal = ''): ?string => $this->access->readCredential(
+				reference: $reference,
+				principal: $principal
+			)
 		);
 
 		foreach ($tokens->load(declarations: $this->access->declarations(schema: ObjectenOpenRegisterAccess::CREDENTIAL_SCHEMA)) as $reason) {
@@ -186,7 +189,12 @@ class OpenRegisterObjectenGateway {
 		$declarations = [];
 		foreach ($this->access->declarations(schema: ObjectenOpenRegisterAccess::OBJECTTYPE_SCHEMA) as $row) {
 			$row['uuid'] = (string)($row['publishedUuid'] ?? '');
-			unset($row['publishedUuid']);
+			// OpenRegister drops `register` and `schema` from an object body,
+			// so a configured objecttype stores them as objectsRegister and
+			// objectsSchema; a row under the first names is still read.
+			$row['register'] = (string)($row['objectsRegister'] ?? ($row['register'] ?? ''));
+			$row['schema'] = (string)($row['objectsSchema'] ?? ($row['schema'] ?? ''));
+			unset($row['publishedUuid'], $row['objectsRegister'], $row['objectsSchema']);
 			$declarations[] = $row;
 		}
 

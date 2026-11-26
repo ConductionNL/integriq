@@ -62,6 +62,13 @@ use OCP\IRequest;
 class ObjectenApiController extends Controller {
 
 	/**
+	 * The path every route of this controller sits under.
+	 *
+	 * @var string
+	 */
+	private const API_PATH = '/api/v2';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request The request.
@@ -527,11 +534,25 @@ class ObjectenApiController extends Controller {
 	}//end typeParam()
 
 	/**
-	 * The base a returned `url` is built from.
+	 * The base a returned `url` is built from: the absolute `/api/v2` URL.
 	 *
-	 * @return string The base.
+	 * The server host alone gave `localhost:8080/objects/<uuid>`, with no
+	 * scheme and no route, which a counterparty cannot follow.
+	 *
+	 * @return string The base, without a trailing slash.
+	 *
+	 * @spec openspec/changes/objecten-api-facade/specs/objecten-api-facade/spec.md
 	 */
 	private function baseUrl(): string {
-		return rtrim((string)$this->request->getServerHost(), '/');
+		// Every route of this controller sits under `/api/v2`; the request's own
+		// path up to it carries the web root and `index.php` as the client used them.
+		$uri = (string)$this->request->getRequestUri();
+		$at = strpos($uri, self::API_PATH);
+		$path = '';
+		if ($at !== false) {
+			$path = substr($uri, 0, ($at + strlen(self::API_PATH)));
+		}
+
+		return $this->request->getServerProtocol() . '://' . $this->request->getServerHost() . $path;
 	}//end baseUrl()
 }//end class
