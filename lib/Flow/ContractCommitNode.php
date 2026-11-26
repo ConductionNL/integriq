@@ -394,16 +394,7 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 					now: $now
 				);
 			} catch (FlowNodeException $failure) {
-				$this->logger->error(
-					'[openconnector.contract-commit] ' . $failure->getMessage(),
-					[
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'step' => $stepId,
-						'synchronization' => $reference,
-						'item' => $index,
-					]
-				);
+				$this->logBuildFailure(failure: $failure, stepId: $stepId, reference: $reference, index: $index);
 
 				// `dead_letter` is treated like `continue` here; the capture is
 				// engine-side wiring (see class docblock).
@@ -439,6 +430,29 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 	}//end commitPage()
 
 	/**
+	 * Log a payload that could not be built, before the onError policy decides its fate.
+	 *
+	 * @param FlowNodeException $failure The build failure.
+	 * @param string $stepId The step id.
+	 * @param string $reference The synchronization reference.
+	 * @param int|string $index The item's index within the page.
+	 *
+	 * @return void
+	 */
+	private function logBuildFailure(FlowNodeException $failure, string $stepId, string $reference, int|string $index): void {
+		$this->logger->error(
+			'[openconnector.contract-commit] ' . $failure->getMessage(),
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'step' => $stepId,
+				'synchronization' => $reference,
+				'item' => $index,
+			]
+		);
+	}//end logBuildFailure()
+
+	/**
 	 * Tally what a page's plans decided: committed, skipped, or failed to build.
 	 *
 	 * `$plans[$index]` is the committed uuid (string) on success, null for a
@@ -457,11 +471,15 @@ class ContractCommitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		foreach ($plans as $plan) {
 			if ($plan instanceof FlowNodeException) {
 				$failed++;
-			} elseif ($plan === null) {
-				$skipped++;
-			} else {
-				$committed++;
+				continue;
 			}
+
+			if ($plan === null) {
+				$skipped++;
+				continue;
+			}
+
+			$committed++;
 		}
 
 		return ['committed' => $committed, 'skipped' => $skipped, 'failed' => $failed];

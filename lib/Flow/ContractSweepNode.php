@@ -406,20 +406,7 @@ class ContractSweepNode implements
 				throw $failure;
 			}
 
-			return [
-				FlowItems::item(
-					json: [
-						FlowNodeSupport::ERROR_KEY => [
-							'step' => $stepId,
-							'node' => self::NODE_ID,
-							'kind' => 'sweep',
-							'message' => $failure->getMessage(),
-							'synchronization' => $reference,
-						],
-					],
-					fromItemIndex: 0
-				),
-			];
+			return $this->errorOutput(failure: $failure, stepId: $stepId, reference: $reference);
 		}//end try
 
 		$out = [
@@ -447,6 +434,32 @@ class ContractSweepNode implements
 
 		return $out;
 	}//end sweep()
+
+	/**
+	 * Build the single error item emitted when the sweep fails under `continue`/`dead_letter`.
+	 *
+	 * @param FlowNodeException $failure The sweep failure.
+	 * @param string $stepId The step id.
+	 * @param string $reference The synchronization reference.
+	 *
+	 * @return array Exactly one error item.
+	 */
+	private function errorOutput(FlowNodeException $failure, string $stepId, string $reference): array {
+		return [
+			FlowItems::item(
+				json: [
+					FlowNodeSupport::ERROR_KEY => [
+						'step' => $stepId,
+						'node' => self::NODE_ID,
+						'kind' => 'sweep',
+						'message' => $failure->getMessage(),
+						'synchronization' => $reference,
+					],
+				],
+				fromItemIndex: 0
+			),
+		];
+	}//end errorOutput()
 
 	/**
 	 * Write this hop's swept count onto the run log, via the context's report handle.

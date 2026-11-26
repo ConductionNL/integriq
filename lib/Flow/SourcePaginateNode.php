@@ -389,42 +389,21 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 		$totalErrors = 0;
 		foreach (array_values($items) as $index => $item) {
 			try {
-				[$objects, $fetchInfo] = $this->fetch(reference: $reference);
-				$pages = array_chunk($objects, $pageSize);
-
-				$this->assertWithinCeiling(
-					pageCount: count($pages),
+				$result = $this->pagesFor(
+					item: $item,
+					index: $index,
+					reference: $reference,
+					pageSize: $pageSize,
 					maxPages: $maxPages,
-					stepId: $stepId,
-					reference: $reference
+					outputKey: $outputKey,
+					stepId: $stepId
 				);
-
-				$totalObjects += count($objects);
-				$totalPages += count($pages);
-				$totalSourcePages += (int)($fetchInfo['pagesFetched'] ?? 0);
-
-				$emitted = array_merge(
-					$emitted,
-					$this->itemsFor(
-						pages: $pages,
-						fetchInfo: $fetchInfo,
-						item: $item,
-						index: $index,
-						outputKey: $outputKey,
-						reference: $reference,
-						pageSize: $pageSize
-					)
-				);
+				$totalObjects += $result['objects'];
+				$totalPages += $result['pages'];
+				$totalSourcePages += $result['sourcePages'];
+				$emitted = array_merge($emitted, $result['items']);
 			} catch (FlowNodeException $exception) {
-				$this->logger->error(
-					'[openconnector.source-paginate] ' . $exception->getMessage(),
-					[
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'step' => $stepId,
-						'synchronization' => $reference,
-					]
-				);
+				$this->logFetchFailure(exception: $exception, stepId: $stepId, reference: $reference);
 
 				// `dead_letter` is treated like `continue`: the item carries
 				// explicit error state and the dead-letter capture itself is
@@ -449,19 +428,100 @@ class SourcePaginateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeCon
 
 		$this->writeReport(
 			context: $context,
-			report: [
-				'objects' => ['count' => $totalObjects],
-				// This node's own re-chunking of the fetched objects for
-				// downstream item emission -- NOT how many pages the source
-				// was actually asked for. See `sourcePages` for that.
-				'pages' => ['count' => $totalPages],
-				'sourcePages' => ['count' => $totalSourcePages],
-				'errors' => ['count' => $totalErrors],
-			]
+			report: $this->reportBuckets(
+				objects: $totalObjects,
+				pages: $totalPages,
+				sourcePages: $totalSourcePages,
+				errors: $totalErrors
+			)
 		);
 
 		return $emitted;
 	}//end paginateForEachItem()
+
+	/**
+	 * Fetch the source once for one input item, enforce the page ceiling and build its items.
+	 *
+	 * @param array $item The input item.
+	 * @param int $index The item's index.
+	 * @param string $reference The synchronization reference.
+	 * @param int $pageSize Objects per emitted page.
+	 * @param int $maxPages The page ceiling.
+	 * @param string $outputKey The output key, or '' for the default.
+	 * @param string $stepId The step id.
+	 *
+	 * @return array{items: array, objects: int, pages: int, sourcePages: int} The emitted items and this fetch's totals.
+	 *
+	 * @throws FlowNodeException When the fetch fails or the ceiling is exceeded.
+	 */
+	private function pagesFor(array $item, int $index, string $reference, int $pageSize, int $maxPages, string $outputKey, string $stepId): array {
+		[$objects, $fetchInfo] = $this->fetch(reference: $reference);
+		$pages = array_chunk($objects, $pageSize);
+
+		$this->assertWithinCeiling(
+			pageCount: count($pages),
+			maxPages: $maxPages,
+			stepId: $stepId,
+			reference: $reference
+		);
+
+		return [
+			'items' => $this->itemsFor(
+				pages: $pages,
+				fetchInfo: $fetchInfo,
+				item: $item,
+				index: $index,
+				outputKey: $outputKey,
+				reference: $reference,
+				pageSize: $pageSize
+			),
+			'objects' => count($objects),
+			'pages' => count($pages),
+			'sourcePages' => (int)($fetchInfo['pagesFetched'] ?? 0),
+		];
+	}//end pagesFor()
+
+	/**
+	 * Log a failed fetch, before the onError policy decides its fate.
+	 *
+	 * @param FlowNodeException $exception The fetch failure.
+	 * @param string $stepId The step id.
+	 * @param string $reference The synchronization reference.
+	 *
+	 * @return void
+	 */
+	private function logFetchFailure(FlowNodeException $exception, string $stepId, string $reference): void {
+		$this->logger->error(
+			'[openconnector.source-paginate] ' . $exception->getMessage(),
+			[
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'step' => $stepId,
+				'synchronization' => $reference,
+			]
+		);
+	}//end logFetchFailure()
+
+	/**
+	 * Shape this hop's totals into the run log's report buckets.
+	 *
+	 * @param int $objects Objects fetched.
+	 * @param int $pages This node's own re-chunking of the fetched objects for
+	 *                   downstream item emission -- NOT how many pages the
+	 *                   source was actually asked for (see `$sourcePages`).
+	 * @param int $sourcePages Pages actually requested from the source.
+	 * @param int $errors Items whose fetch failed.
+	 *
+	 * @return array The report, keyed per {@see FlowStepReport::put()}.
+	 */
+	private function reportBuckets(int $objects, int $pages, int $sourcePages, int $errors): array {
+		return [
+			'objects' => ['count' => $objects],
+			'pages' => ['count' => $pages],
+			'sourcePages' => ['count' => $sourcePages],
+			'errors' => ['count' => $errors],
+		];
+	}//end reportBuckets()
 
 	/**
 	 * Write this hop's summary onto the run log, via the context's report handle.
