@@ -204,7 +204,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 *
 	 * @return string|null The end date as `Y-m-d`, or null while the subscription runs.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
 	 */
 	public function expiredOn(ObjectEntity $subscription, ?DateTimeInterface $now=null): ?string {
 		$expiresAt = ($subscription->getObject()['expiresAt'] ?? null);
@@ -234,7 +234,7 @@ class ProductPolicyService implements ProductPolicyServiceInterface {
 	 *
 	 * @return bool True when its status is `retired`.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	public function isRetired(ObjectEntity $product): bool {
 		return ($product->getObject()['status'] ?? '') === 'retired';

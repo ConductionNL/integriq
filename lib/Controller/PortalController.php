@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md
+ * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md
+ * @spec openspec/specs/api-product-gateway/spec.md
  */
 class PortalController extends Controller {
 
@@ -90,7 +90,7 @@ class PortalController extends Controller {
 	 * @param IL10N                      $l             Translates the refusals.
 	 * @param LoggerInterface            $logger        The logger.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md
 	 */
 	public function __construct(
 		IRequest $request,
@@ -113,7 +113,7 @@ class PortalController extends Controller {
 	 *
 	 * @return JSONResponse `{results: list}`, or 403 for an account outside the developer group.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-finds-the-published-api-products-req-devp-001
 	 */
 	#[NoAdminRequired]
 	public function products(): JSONResponse {
@@ -138,7 +138,7 @@ class PortalController extends Controller {
 	 *
 	 * @return JSONResponse `{results: list}`, or 403 for an account outside the developer group.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 	 */
 	#[NoAdminRequired]
 	public function applications(): JSONResponse {
@@ -164,7 +164,7 @@ class PortalController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the application, 400 without a name, or 403 outside the developer group.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSave::options() is the shared save-options builder.
 	 */
@@ -215,7 +215,7 @@ class PortalController extends Controller {
 	 *
 	 * @return JSONResponse 201 (active), 202 (pending approval), 400, 403 or 404.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 	 */
 	#[NoAdminRequired]
 	public function requestAccess(string $consumerId): JSONResponse {
@@ -266,7 +266,7 @@ class PortalController extends Controller {
 	 *
 	 * @return JSONResponse `{group, members}`; members is null when the group does not exist.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function getSettings(): JSONResponse {
@@ -278,7 +278,7 @@ class PortalController extends Controller {
 	 *
 	 * @return JSONResponse `{group, members}`, or 400 naming a group that does not exist.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 	 */
 	#[AuthorizedAdminSetting(IntegriqAdmin::class)]
 	public function setSettings(): JSONResponse {
@@ -301,7 +301,7 @@ class PortalController extends Controller {
 	 *
 	 * @return array{0: IUser|null, 1: JSONResponse} The developer, or null and a 401/403 answer.
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d1-who-a-developer-is
 	 */
 	private function requireDeveloper(): array {
 		$user = $this->userSession->getUser();
@@ -328,7 +328,7 @@ class PortalController extends Controller {
 	 * @phpstan-assert-if-true ObjectEntity $consumer
 	 * @psalm-assert-if-true ObjectEntity $consumer
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
+	 * @spec openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md#d2-an-application-is-a-consumer-the-developer-owns
 	 */
 	private function owns(IUser $user, ?ObjectEntity $consumer): bool {
 		$data = ($consumer?->getObject() ?? []);

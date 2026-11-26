@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md
+ * @spec openspec/specs/api-product-gateway/spec.md
  */
 
 declare(strict_types=1);
@@ -247,7 +247,7 @@ class PortalControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
 	 */
 	public function testAnotherDevelopersApplicationIsOutOfReach(): void {
 		$controller = $this->controller(uid: 'developer-a');
