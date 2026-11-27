@@ -50,8 +50,11 @@ The building agent follows `openspec/woo-build-rules.md`:
 - [x] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
 - [x] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
 - [x] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
-- [ ] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`.
+- [x] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`.
+  - 2026-11-27 verification pass: `check:strict` red on development and identically on the verification branch (phpcs warnings, phpmd, psalm, PHPUnit `development: Tests: 11129, Errors: 2, Failures: 3; branch: Tests: 11129, Errors: 2, Failures: 4`, the same failing set; phpstan clean). `lint`, `check:l10n-js` and `check:manifest` pass. `format`, `check:l10n` and `check:schema-l10n` are red repo-wide, but none of this change's 18 files appears in any of their findings.
 - [ ] CI runs the gates on the full tree; the coverage guard needs a test for every added statement.
+  - Open 2026-11-27: Code Quality is red on `development` itself (a6502e5), so this cannot be read as green for this change.
 - [x] `openspec validate connectors-graph-document-search-chat-threads --type change --strict` passes.
 - [x] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
 - [ ] Done means merged on `development` with CI green. Row 1.16 is `production` only once a store release carries it.
+  - Open 2026-11-27: merged on `development`, but CI on `development` is not green.

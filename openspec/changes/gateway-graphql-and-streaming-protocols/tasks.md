@@ -51,4 +51,5 @@ Kind: code. Size M. Rows `integriq:gw-graphql`, `integriq:gw-protocols`.
 - [x] `openspec validate gateway-graphql-and-streaming-protocols --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
 - [x] PHPUnit and Newman run, exit codes read
   - 2026-11-25: PHPUnit exit 0 (Gateway 36/36, GraphQL handler/reader/limiter green), Newman exit 0 (9/9), Playwright 2/2. Task 4 (nginx and Mosquitto configurations) is not built, so its walk is not part of this run.
-- [ ] `webonyx/graphql-php` passes `composer audit` and the licence gate
+- [x] `webonyx/graphql-php` passes `composer audit` and the licence gate
+  - N/A, checked 2026-11-27: `webonyx/graphql-php` is not a dependency (absent from `composer.json` and `composer.lock`). Task 1 built its own reader (`GraphqlDocumentReader` over `GraphqlLexer`), so there is no new package to audit or license-check. If webonyx is swapped in later, that change owns this check.
