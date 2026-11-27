@@ -198,6 +198,23 @@ export function testJobHandler({ item }) {
 }
 
 /**
+ * Open the run modal for a flow's "Force run" row action.
+ *
+ * Registered under the name the Flows table's named source (nextcloud-vue's
+ * `indexSources.js`) declares its row action's `handler` as — a named source
+ * is shared across apps and cannot import one app's handler directly, so it
+ * names a registry entry instead. Same precedent as `runSynchronizationHandler`
+ * / `runJobHandler`: the request and result rendering live in runTargets.js's
+ * `flow/run` descriptor, which POSTs the existing `FlowsController::run()`
+ * endpoint (flow-orchestration REQ-007d) and shows the returned flow_run.
+ *
+ * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.
+ */
+export function runFlowHandler({ item }) {
+	modalBus.emit(EVENT_OPEN_RUN_ACTION, { target: 'flow', mode: 'run', item })
+}
+
+/**
  * Open the Test mapping modal for the clicked mapping row.
  *
  * @param {{ actionId: string, item: object }} ctx Row-action context from CnIndexPage.

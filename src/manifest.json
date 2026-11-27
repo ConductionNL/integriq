@@ -4199,6 +4199,27 @@
       "title": "Flow runs",
       "_note": "A flow you could draw and never watch. flow_run carries a six-state lifecycle including dead_letter and suspended, and nothing in src/ read it, so a run that failed overnight left no trace a user could reach. This is the flow counterpart of Sync runs and sits beside it in Operations.",
       "config": {
+        "filterControls": [
+          {
+            "key": "flowId",
+            "label": "Flow",
+            "type": "reference",
+            "optionsFrom": {
+              "register": "integriq",
+              "schema": "flow",
+              "labelKey": "name",
+              "valueKey": "uuid"
+            }
+          },
+          {
+            "key": "startedAt",
+            "label": "Time",
+            "type": "dateRange",
+            "range": {
+              "defaultDays": 7
+            }
+          }
+        ],
         "register": "integriq",
         "schema": "flow_run",
         "sortKey": "startedAt",

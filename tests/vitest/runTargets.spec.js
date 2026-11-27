@@ -33,6 +33,7 @@ describe('getRunDescriptor', () => {
 		['synchronization', 'test'],
 		['job', 'run'],
 		['job', 'test'],
+		['flow', 'run'],
 	])('resolves %s/%s', (target, mode) => {
 		expect(getRunDescriptor(target, mode)).not.toBeNull()
 	})
@@ -129,6 +130,104 @@ describe('job descriptors — request routing and locked force', () => {
 		expect(initialOptionValues(getRunDescriptor('job', 'run'))).toEqual({
 			forceRun: false,
 		})
+	})
+})
+
+describe('flow/run — request routing', () => {
+	const descriptor = getRunDescriptor('flow', 'run')
+
+	it('posts to the existing FlowsController::run() endpoint', () => {
+		const { url, body } = descriptor.request({ id: 'f-1' }, {})
+		expect(url).toBe('/apps/integriq/api/flows/f-1/run')
+		expect(body).toEqual({})
+	})
+
+	it('declares no options: a manual flow run has nothing to gate', () => {
+		expect(descriptor.options).toEqual([])
+		expect(initialOptionValues(descriptor)).toEqual({})
+	})
+})
+
+describe('flow status classification', () => {
+	const { status } = getRunDescriptor('flow', 'run')
+
+	it('reports completed as success', () => {
+		expect(status({ status: 'completed' })).toEqual({
+			type: 'success',
+			text: 'The flow completed successfully.',
+		})
+	})
+
+	it('reports suspended (mid-flight approval wait) as a warning, not a failure', () => {
+		expect(status({ status: 'suspended' })).toEqual({
+			type: 'warning',
+			text: 'The flow is waiting on an approval step and has not finished yet.',
+		})
+	})
+
+	it('reports failed/stopped/dead_letter as a generic error', () => {
+		// The flow_run itself never carries an `error` field — only a
+		// `flow_run_log` entry does (FlowRunnerService::appendLog()) — so there
+		// is nothing on `payload` to prefer here. "View full log" is how the
+		// user gets the per-step detail.
+		expect(status({ status: 'failed' })).toEqual({
+			type: 'error',
+			text: 'The flow did not complete.',
+		})
+		expect(status({ status: 'stopped' })).toEqual({
+			type: 'error',
+			text: 'The flow did not complete.',
+		})
+		expect(status({ status: 'dead_letter' })).toEqual({
+			type: 'error',
+			text: 'The flow did not complete.',
+		})
+	})
+
+	it('reports a missing payload as a warning', () => {
+		expect(status(null)).toEqual({
+			type: 'warning',
+			text: 'The run returned no result.',
+		})
+	})
+})
+
+describe('flow sections', () => {
+	const { sections } = getRunDescriptor('flow', 'run')
+
+	it('renders status, trigger source, started and finished from the real flow_run fields', () => {
+		const run = sections({
+			status: 'completed',
+			triggerSource: 'manual',
+			startedAt: '2026-11-01T10:00:00+00:00',
+			finishedAt: '2026-11-01T10:00:05+00:00',
+		}).find((section) => section.id === 'run')
+
+		expect(run.value).toEqual([
+			{ label: 'Status', value: 'completed' },
+			{ label: 'Trigger source', value: 'manual' },
+			{ label: 'Started', value: '2026-11-01T10:00:00+00:00' },
+			{ label: 'Finished', value: '2026-11-01T10:00:05+00:00' },
+		])
+	})
+
+	it('returns nothing for a null payload', () => {
+		expect(sections(null)).toEqual([])
+	})
+})
+
+describe('flow payloadFromError — recovering a 500 flow_run body', () => {
+	const { payloadFromError } = getRunDescriptor('flow', 'run')
+
+	it('recovers the flow_run when the error body is one', () => {
+		const err = { response: { data: { status: 'failed', triggerSource: 'manual' } } }
+		expect(payloadFromError(err)).toEqual({ status: 'failed', triggerSource: 'manual' })
+	})
+
+	it('returns null for a body with no status, so the generic error message is used', () => {
+		expect(payloadFromError({ response: { data: { message: 'boom' } } })).toBeNull()
+		expect(payloadFromError({ response: { data: null } })).toBeNull()
+		expect(payloadFromError({})).toBeNull()
 	})
 })
 
@@ -359,6 +458,10 @@ describe('logsLink', () => {
 		expect(getRunDescriptor('job', 'run').logsLink({ id: 3 })).toEqual({
 			name: 'JobLogs',
 			query: { jobId: 3 },
+		})
+		expect(getRunDescriptor('flow', 'run').logsLink({ id: 'f-1' })).toEqual({
+			name: 'FlowRuns',
+			query: { flowId: 'f-1' },
 		})
 	})
 

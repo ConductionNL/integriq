@@ -475,7 +475,16 @@ export default {
 				// not due) — `?? null` normalises `undefined` without swallowing it.
 				this.payload = response.data ?? null
 			} catch (err) {
-				this.requestError = this.extractError(err)
+				// FlowsController::run() maps a failed/stopped/dead_letter flow_run to
+				// HTTP 500 but still returns the full flow_run body — recover it so the
+				// modal renders status()/sections() the same as a 2xx run instead of
+				// collapsing a real result into a bare error string.
+				const recovered = this.descriptor.payloadFromError?.(err) ?? null
+				if (recovered !== null) {
+					this.payload = recovered
+				} else {
+					this.requestError = this.extractError(err)
+				}
 			} finally {
 				this.step = 'result'
 			}

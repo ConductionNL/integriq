@@ -492,6 +492,143 @@ function jobLogsLink(item) {
 }
 
 /**
+ * Status derivation for a flow_run.
+ *
+ * `completed` is the only outright success; `suspended` is a mid-flight wait
+ * on an `approval` step's resolution, not a failure (flow-orchestration
+ * REQ-005) and must not be reported as one. Everything else (`failed`,
+ * `stopped`, `dead_letter`, or an unrecognised status) reports as a generic
+ * error — `FlowRunnerService::appendLog()` only ever stamps an `error` on a
+ * `flow_run_log` entry, never on the flow_run itself, so there is nothing to
+ * read off `payload` here. "View full log" is how the user gets the detail.
+ *
+ * @param {object|null} payload The returned flow_run.
+ * @return {{type: string, text: string}} Banner type and text.
+ */
+function flowStatus(payload) {
+	if (payload === null || payload === undefined) {
+		return {
+			type: 'warning',
+			text: t('integriq', 'The run returned no result.'),
+		}
+	}
+
+	const status = String(payload.status || '')
+
+	if (status === 'completed') {
+		return {
+			type: 'success',
+			text: t('integriq', 'The flow completed successfully.'),
+		}
+	}
+
+	if (status === 'suspended') {
+		return {
+			type: 'warning',
+			text: t(
+				'integriq',
+				'The flow is waiting on an approval step and has not finished yet.',
+			),
+		}
+	}
+
+	return {
+		type: 'error',
+		text: t('integriq', 'The flow did not complete.'),
+	}
+}
+
+/**
+ * Section list for a flow_run.
+ *
+ * Per-step detail (node-by-node status, item counts, FlowStepReport output)
+ * lives on `flow_run_log`/`flow_run_steps`, not on this row — rendering it
+ * here would mean re-deriving CnRunDetailSidebar's own query. "View full log"
+ * takes the user to that detail instead of this modal re-describing it thinly.
+ *
+ * `triggerSource`/`startedAt`/`finishedAt` are the flow_run's real fields
+ * (`FlowRunnerService::run()`/`finalizeFlowRun()`) — there is no `trigger` or
+ * `triggeredBy` field on this row.
+ *
+ * @param {object|null} payload The returned flow_run.
+ * @return {Array<object>} Render sections.
+ */
+function flowSections(payload) {
+	if (payload === null || payload === undefined) {
+		return []
+	}
+
+	return [
+		{
+			id: 'run',
+			title: t('integriq', 'Run'),
+			kind: 'meta',
+			value: [
+				{ label: t('integriq', 'Status'), value: payload.status || '—' },
+				{
+					label: t('integriq', 'Trigger source'),
+					value: payload.triggerSource || '—',
+				},
+				{
+					label: t('integriq', 'Started'),
+					value: payload.startedAt || '—',
+				},
+				{
+					label: t('integriq', 'Finished'),
+					value: payload.finishedAt || '—',
+				},
+			],
+		},
+	]
+}
+
+/**
+ * Where "View full log" goes for a flow.
+ *
+ * @param {object} item The flow row.
+ * @return {object|null} A router location, or null without an id.
+ */
+function flowLogsLink(item) {
+	return logsLocation('view-flow-runs', rowId(item))
+}
+
+/**
+ * Recover a flow_run payload from a failed request.
+ *
+ * `FlowsController::run()` maps a `failed`/`stopped`/`dead_letter` flow_run to
+ * HTTP 500, but the response body is still the full flow_run — not an
+ * `{ error, message }` shape. Without this, `RunActionModal` would fall
+ * through to `extractError()` and show a bare string instead of the real
+ * status()/sections() the modal already knows how to render.
+ *
+ * @param {object} err The Axios error.
+ * @return {object|null} The flow_run payload, or null when the body isn't one.
+ */
+function flowPayloadFromError(err) {
+	const data = err?.response?.data
+
+	if (data && typeof data === 'object' && typeof data.status === 'string') {
+		return data
+	}
+
+	return null
+}
+
+/**
+ * How a flow run's result is read.
+ *
+ * @return {object} The status, sections, logsLink and payloadFromError fields of a descriptor.
+ */
+function flowResult() {
+	return {
+		status: flowStatus,
+		sections: flowSections,
+		logsLink: flowLogsLink,
+		payloadFromError: flowPayloadFromError,
+	}
+}
+
+/**
  * How a synchronization run's result is read, shared by both modes.
  *
  * @return {object} The status, sections and logsLink fields of a descriptor.
@@ -719,6 +856,29 @@ function jobTestDescriptor() {
 }
 
 /**
+ * The `flow/run` descriptor.
+ *
+ * FlowsController::run() (flow-orchestration REQ-007d) runs the flow inline
+ * and returns the finished flow_run — no queue, no polling. No options:
+ * unlike a synchronization or job, a manual flow run has nothing to gate
+ * behind a switch.
+ *
+ * @return {object} The descriptor.
+ */
+function flowRunDescriptor() {
+	return {
+		title: t('integriq', 'Run flow'),
+		runLabel: t('integriq', 'Run'),
+		options: [],
+		request: (item) => ({
+			url: `/apps/integriq/api/flows/${rowId(item)}/run`,
+			body: {},
+		}),
+		...flowResult(),
+	}
+}
+
+/**
  * Build the descriptor table, keyed `<target>/<mode>`.
  *
  * Built on demand rather than held as a module constant so every `t()` call runs
@@ -734,14 +894,15 @@ function buildDescriptors() {
 		'synchronization/test': synchronizationTestDescriptor(),
 		'job/run': jobRunDescriptor(),
 		'job/test': jobTestDescriptor(),
+		'flow/run': flowRunDescriptor(),
 	}
 }
 
 /**
  * Look up the descriptor for a run-action bus payload.
  *
- * @param {string} target The entity, `synchronization` or `job`.
- * @param {string} mode   The action, `run` or `test`.
+ * @param {string} target The entity, `synchronization`, `job`, or `flow`.
+ * @param {string} mode   The action, `run` or `test` (`flow` supports only `run`).
  * @return {object|null} The descriptor, or null when the pair is unknown.
  */
 export function getRunDescriptor(target, mode) {
