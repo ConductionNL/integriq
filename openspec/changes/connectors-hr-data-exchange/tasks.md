@@ -20,8 +20,12 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 - **acceptance_criteria**:
   - GIVEN a handoff set to `klaargezet` WHEN the push succeeds THEN it reads `verzonden` with the delivery reference
   - GIVEN the bureau's return file with two payslips WHEN the pull runs THEN two `Payslip` objects carry the handoff id and the handoff reads `ontvangen`
-- [ ] Implement
+- [x] Implement
+  - `lib/Settings/register.d/payroll-handoff-exchange.json`: three unbound pushes, `payroll-handoff-push-loket`, `-nmbrs` and `-sftp`, each on condition `status = klaargezet` over the Task 1 mapping of its bureau, writing `verzonden`, `deliveryReference` and `deliveredAt` back on success and nothing on failure (D1); and the pickup `payroll-payslip-pull-sftp` with the mapping `payroll-return-row-to-payslip` into `humaniq/Payslip`, keyed on the bureau's payslip id, the handoff found through `lookup()` by loonheffingennummer and period (D2).
+  - humaniq keeps the mutations as separate `PayrollHandoffMutation` objects pointing at the handoff, so the engine gained four generic pieces (spec delta `specs/synchronization-engine/spec.md`): `sourceConfig.embedRelated` (`RelatedObjectEmbedder`, REQ-HRX-003), `targetConfig.relatedWriteBack` applied once after a pull run through a normal save so humaniq's intake listener runs (`RelatedWriteBack`, REQ-HRX-004), the `sftp`/`ftps` target type writing the mapped rows as one CSV file through `RemoteFileClient` (`RemoteFileTarget`, REQ-HRX-005), and `{{ now }}` in every write-back (REQ-HRX-006).
+  - Not seeded: payslip pulls from the Loket.nl and Nmbrs APIs, because neither publishes the payslip read to record an example from. The acceptance criteria name the return file, which is the SFTP pickup.
 - [ ] Test (PHPUnit; one run against the SFTP container with humaniq installed on a dev instance)
+  - PHPUnit done: `RelatedObjectEmbedderTest`, `RelatedWriteBackTest`, `RemoteFileTargetTest`, `SynchronizationPayrollExchangeTest` (the real engine: sftp/ftps delivery and write-back, refusal, delete, `{{ now }}`, embedding, the run-level write-back and a test run moving nothing) and `PayrollHandoffExchangeSetTest` (the stored handoff embedded and mapped to each bureau's example, the SFTP file, `return-2026-09.csv` with two payslips through the real pickup reader and lookup, the handoff moved to `ontvangen`). Open: the run against the SFTP container with humaniq installed, which needs a live instance.
 
 ### Task 3: Studytube people push and completions pull
 - **spec_ref**: `openspec/changes/connectors-hr-data-exchange/specs/hr-data-exchange/spec.md#requirement-a-learning-platform-learns-who-works-where-and-finished-trainings-come-back-req-hrx-002`
