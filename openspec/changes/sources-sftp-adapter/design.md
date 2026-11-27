@@ -11,7 +11,7 @@ Kind: code. Size M. An `SftpAdapter` and an `FtpsAdapter` in `lib/Service/Adapte
 
 ## D1. The library
 
-SFTP through phpseclib 3 (MIT), whose `phpseclib3\` namespace does not clash with the older `phpseclib\` namespace. The first task checks which phpseclib major the supported Nextcloud versions bundle for external storage; if one already provides `phpseclib3\Net\SFTP` in a compatible version, the adapter uses it and adds no copy, else it adds the dependency. FTPS through PHP's `ftp` extension (`ftp_ssl_connect`), reported unavailable when the extension is missing.
+SFTP through phpseclib 3 (MIT), whose `phpseclib3\` namespace does not clash with the older `phpseclib\` namespace. The first task checks which phpseclib major the supported Nextcloud versions bundle for external storage; if one already provides `phpseclib3\Net\SFTP` in a compatible version, the adapter uses it and adds no copy, else it adds the dependency. Settled (task 1, 27 Nov 2026): Nextcloud 32 to 34 bundle phpseclib 2.0.55 and Nextcloud 35 bundles 3.0.57, so integriq requires `phpseclib/phpseclib: ^3.0.57` itself and does not list it as core-provided. FTPS through PHP's `ftp` extension (`ftp_ssl_connect`), reported unavailable when the extension is missing.
 
 ## D2. Credentials and host keys
 

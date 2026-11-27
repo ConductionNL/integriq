@@ -83,6 +83,7 @@
         "onelogin/php-saml": "^4.6",
         "php-soap/ext-soap-engine": "^1.7",
         "php-soap/psr18-transport": "^1.7",
+        "phpseclib/phpseclib": "^3.0.57",
         "react/async": "^4.3",
         "react/event-loop": "^1.5",
         "react/promise": "^3.2",

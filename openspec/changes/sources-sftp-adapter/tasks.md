@@ -9,7 +9,8 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 - **files**: `composer.json`, `composer.lock`
 - **acceptance_criteria**:
   - GIVEN the supported Nextcloud versions WHEN the bundled phpseclib major is checked THEN the decision (use core's or add phpseclib 3) is recorded in the PR with the version found
-- [ ] Implement
+- [x] Implement
+  - Checked 27 Nov 2026 against `composer.lock` of nextcloud/3rdparty for the range in `appinfo/info.xml` (32 to 35): stable32, stable33 and stable34 bundle phpseclib 2.0.55 (namespace `phpseclib\`, no `phpseclib3\Net\SFTP`), stable35 bundles 3.0.57. Core cannot be used on 32 to 34, so integriq ships phpseclib 3 itself. It already did, but only transitively (robrichards/xmlseclibs, through onelogin/php-saml, locked 3.0.59); `composer.json` now requires `phpseclib/phpseclib: ^3.0.57` directly, so the SFTP session does not depend on the SAML stack keeping it. It is not in `extra.nextcloud-core-provided` and must not be: pruning it would break SFTP on 32 to 34. On 35, core's 3.0.57 and integriq's copy share the major, so whichever loads first serves the same API. `RemoteFileLibraryAndSchedulingTest` pins the direct requirement, the absence from the prune list, a 3.x runtime lock entry and the `phpseclib3\` classes the factory loads.
 - [ ] Test (`composer audit`, the licence gate, and an app load on each supported Nextcloud version)
 
 ### Task 2: The SFTP and FTPS adapters
@@ -74,5 +75,6 @@ Kind: code. Size M. Row `integriq:src-sftp`.
 
 ## Verification
 - [x] `openspec validate sources-sftp-adapter --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
-- [ ] No TimedJob class added (REQ-DIC-005)
+- [x] No TimedJob class added (REQ-DIC-005)
+  - `RemoteFileLibraryAndSchedulingTest::testNoTimedJobRunsARemoteFileSource` scans `lib/` for a class that extends TimedJob and lives under the remote file adapter or names one of its classes; there is none.
 - [ ] PHPUnit and Playwright run, exit codes read
