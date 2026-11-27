@@ -29089,6 +29089,7 @@
         "onelogin/php-saml-4.6.0.0",
         "php-soap/ext-soap-engine-1.9.0.0",
         "php-soap/psr18-transport-1.8.0.0",
+        "phpseclib/phpseclib-3.0.59.0",
         "react/async-4.3.0.0",
         "react/event-loop-1.6.0.0",
         "react/promise-3.3.0.0",
