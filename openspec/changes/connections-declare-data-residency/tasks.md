@@ -74,11 +74,18 @@ the dossiq side that its file validates against the new schema.
 
 The building agent follows `openspec/woo-build-rules.md`:
 
-- [ ] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
-- [ ] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
-- [ ] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
-- [ ] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`, `npm run check:register`.
+- [x] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
+  - 2026-11-27 verification pass: own shallow clone of `development`, branch `cloud/b-integriq-verify-four-changes`, temporary files in a scratch directory outside the clone.
+- [x] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
+  - 2026-11-27, read from the `Tests:` line, development and this branch: `development: Tests: 11129, Errors: 2, Failures: 3; branch: Tests: 11129, Errors: 2, Failures: 4`. The same failing set on both (JobsControllerTest, CallServiceTest, OriPublicEndpointsTest), plus on the branch run SynchronizationSynchronizeEntryGoldenTest, which is timing-dependent (`getSlowestInternship()` names no stage when every stage rounds to 0 ms) and fails on this machine with no PHP changed. None of it is in this change's tests.
+- [x] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
+  - 2026-11-27, through hydra `scripts/diff-check.sh --base origin/development`: 49 of 49 applicable gates ran. One finding, gate-119 procedure-code (16 procedure-named files against a baseline of 10), is a whole-tree count that development carries identically; the verification branch adds no file. units, floor, eslint and stylelint pass.
+- [x] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`, `npm run check:register`.
+  - 2026-11-27: `check:strict` red on development and identically on the branch (phpcs warnings, phpmd, psalm and the PHPUnit set above; phpstan clean); `lint`, `check:l10n-js`, `check:manifest`, `check:register` pass; `format` passes for every file of this change after the verification branch formatted them (249 other files still fail, inherited); `check:l10n` fails on 152 unused keys and `check:schema-l10n` on 292 uncovered strings, none in this change's files.
 - [ ] CI runs the gates on the full tree; the coverage guard needs a test for every added statement.
+  - Open 2026-11-27: Code Quality is red on `development` itself (a6502e5: phpcs, phpmd, psalm, format, schema-l10n, Newman, hydra gates, unit tests), so this cannot be read as green for this change.
 - [x] `openspec validate connections-declare-data-residency --type change --strict` passes.
-- [ ] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
+- [x] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
+  - 2026-11-27, the verification pass: one PR, `--base development`, development merged in, no `Co-Authored-By` trailer.
 - [ ] Done means merged on `development` with CI green. Row 17.11 is `production` only once a store release carries it.
+  - Open 2026-11-27: the code is merged on `development`, CI on `development` is not green (see above).

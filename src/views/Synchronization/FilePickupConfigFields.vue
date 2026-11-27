@@ -50,7 +50,11 @@
 
 		<NcSelect
 			:inputId="uid + '-target'"
-			:inputLabel="watched ? t('integriq', 'Dropped files go to') : t('integriq', 'Picked-up files go to')"
+			:inputLabel="
+				watched
+					? t('integriq', 'Dropped files go to')
+					: t('integriq', 'Picked-up files go to')
+			"
 			:modelValue="targetOption"
 			:options="targetOptions"
 			:clearable="false"
@@ -62,7 +66,12 @@
 			:label="t('integriq', 'Intake app') + ' *'"
 			:modelValue="text('intakeApp')"
 			:error="text('intakeApp') === ''"
-			:helperText="t('integriq', 'The id of the app that takes a dropped file in, for example filinq.')"
+			:helperText="
+				t(
+					'integriq',
+					'The id of the app that takes a dropped file in, for example filinq.',
+				)
+			"
 			@update:modelValue="(value) => write('intakeApp', value.trim())" />
 
 		<NcTextField
@@ -86,19 +95,35 @@
 			:modelValue="formatOption"
 			:options="formatOptions"
 			:clearable="false"
-			@update:modelValue="(option) => write('fileFormat', option?.id === 'auto' ? '' : option?.id)" />
+			@update:modelValue="
+				(option) =>
+					write('fileFormat', option?.id === 'auto' ? '' : option?.id)
+			" />
 
 		<NcTextField
-			v-if="!watched && target === 'mapping' && (fileFormat === 'csv' || fileFormat === 'auto')"
+			v-if="
+				!watched
+				&& target === 'mapping'
+				&& (fileFormat === 'csv' || fileFormat === 'auto')
+			"
 			:id="uid + '-csv-delimiter'"
 			:label="t('integriq', 'CSV delimiter')"
 			:modelValue="text('csvDelimiter')"
-			:helperText="t('integriq', 'One character between the columns of a CSV file, or the word tab. Default a comma.')"
+			:helperText="
+				t(
+					'integriq',
+					'One character between the columns of a CSV file, or the word tab. Default a comma.',
+				)
+			"
 			@update:modelValue="(value) => write('csvDelimiter', value)" />
 
 		<NcSelect
 			:inputId="uid + '-after'"
-			:inputLabel="target === 'mapping' ? t('integriq', 'After a file is read') : t('integriq', 'After a file is stored')"
+			:inputLabel="
+				target === 'mapping'
+					? t('integriq', 'After a file is read')
+					: t('integriq', 'After a file is stored')
+			"
 			:modelValue="afterOption"
 			:options="afterOptions"
 			:clearable="false"
@@ -124,14 +149,26 @@
 				:label="t('integriq', 'Processed folder')"
 				:modelValue="text('processedPath')"
 				placeholder="processed"
-				:helperText="t('integriq', 'The folder inside the watched folder a file is moved to after it was written. Default processed.')"
-				@update:modelValue="(value) => write('processedPath', value.trim())" />
+				:helperText="
+					t(
+						'integriq',
+						'The folder inside the watched folder a file is moved to after it was written. Default processed.',
+					)
+				"
+				@update:modelValue="
+					(value) => write('processedPath', value.trim())
+				" />
 			<NcTextField
 				:id="uid + '-failed-path'"
 				:label="t('integriq', 'Failed folder')"
 				:modelValue="text('failedPath')"
 				placeholder="failed"
-				:helperText="t('integriq', 'The folder inside the watched folder a file is moved to when it could not be written. Default failed.')"
+				:helperText="
+					t(
+						'integriq',
+						'The folder inside the watched folder a file is moved to when it could not be written. Default failed.',
+					)
+				"
 				@update:modelValue="(value) => write('failedPath', value.trim())" />
 		</template>
 
@@ -213,7 +250,10 @@ export default {
 		 */
 		afterOptions() {
 			const labels = {
-				move: this.watched ? t('integriq', 'Move it to the processed or failed folder') : t('integriq', 'Move it to the archive folder'),
+				move: this.watched
+					? t('integriq', 'Move it to the processed or failed folder')
+					: t('integriq', 'Move it to the archive folder'),
+
 				delete: t('integriq', 'Delete it from the server'),
 				keep: t('integriq', 'Leave it on the server'),
 				tag: t('integriq', 'Tag it as ingested or failed'),
@@ -257,7 +297,10 @@ export default {
 		targetOptions() {
 			const labels = {
 				files: t('integriq', 'A folder in Nextcloud Files'),
-				mapping: this.watched ? t('integriq', 'The mapping, one draft object per file') : t('integriq', 'The mapping, one object per record'),
+				mapping: this.watched
+					? t('integriq', 'The mapping, one draft object per file')
+					: t('integriq', 'The mapping, one object per record'),
+
 				intake: t('integriq', 'An app that takes the file in'),
 			}
 			const values = this.watched ? WATCHED_TARGET_VALUES : TARGET_VALUES
@@ -271,7 +314,12 @@ export default {
 		 * @spec exclude trivial select-value projection, presentation only
 		 */
 		targetOption() {
-			return this.targetOptions.find((option) => option.id === this.target) ?? { id: this.target, label: this.target }
+			return (
+				this.targetOptions.find((option) => option.id === this.target) ?? {
+					id: this.target,
+					label: this.target,
+				}
+			)
 		},
 
 		/**
@@ -308,7 +356,11 @@ export default {
 		 * @spec exclude trivial select-value projection, presentation only
 		 */
 		formatOption() {
-			return this.formatOptions.find((option) => option.id === this.fileFormat) ?? { id: this.fileFormat, label: this.fileFormat }
+			return (
+				this.formatOptions.find(
+					(option) => option.id === this.fileFormat,
+				) ?? { id: this.fileFormat, label: this.fileFormat }
+			)
 		},
 
 		/**

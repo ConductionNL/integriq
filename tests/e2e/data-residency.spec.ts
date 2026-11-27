@@ -48,7 +48,11 @@ interface Destination {
  * @param host The host the source calls.
  * @return The source's id.
  */
-async function seedSource(request: APIRequestContext, name: string, host: string): Promise<string> {
+async function seedSource(
+	request: APIRequestContext,
+	name: string,
+	host: string,
+): Promise<string> {
 	const resp = await request.post(`${OR_BASE}/source`, {
 		failOnStatusCode: false,
 		headers: HEADERS,
@@ -73,7 +77,11 @@ async function seedSource(request: APIRequestContext, name: string, host: string
  * @param id The source.
  * @param country The ISO country code.
  */
-async function setResidency(request: APIRequestContext, id: string, country: string): Promise<void> {
+async function setResidency(
+	request: APIRequestContext,
+	id: string,
+	country: string,
+): Promise<void> {
 	const resp = await request.put(`${API_BASE}/sources/${id}/residency`, {
 		failOnStatusCode: false,
 		headers: HEADERS,
@@ -89,7 +97,9 @@ async function setResidency(request: APIRequestContext, id: string, country: str
  * @return The rows.
  */
 async function destinations(request: APIRequestContext): Promise<Destination[]> {
-	const resp = await request.get(`${API_BASE}/egress/destinations`, { headers: HEADERS })
+	const resp = await request.get(`${API_BASE}/egress/destinations`, {
+		headers: HEADERS,
+	})
 	expect(resp.status()).toBe(200)
 
 	return ((await resp.json()) as { destinations: Destination[] }).destinations
@@ -110,29 +120,49 @@ test.describe.serial('data residency', () => {
 	let partner = ''
 
 	test.beforeAll(async ({ request }) => {
-		partner = await seedSource(request, `E2E zgw-zaken ${stamp}`, `zaken-${stamp}.e2e.invalid`)
+		partner = await seedSource(
+			request,
+			`E2E zgw-zaken ${stamp}`,
+			`zaken-${stamp}.e2e.invalid`,
+		)
 	})
 
 	test.afterAll(async ({ request }) => {
 		// Switch the mode off again so no other spec's outbound call is refused.
-		await request.put(`${API_BASE}/egress/eu-only`, { failOnStatusCode: false, headers: HEADERS, data: { enabled: false } })
+		await request.put(`${API_BASE}/egress/eu-only`, {
+			failOnStatusCode: false,
+			headers: HEADERS,
+			data: { enabled: false },
+		})
 	})
 
 	test('an administrator records where a partner sits', async ({ page }) => {
 		// @e2e connections-declare-data-residency/data-residency::an-administrator-records-where-a-partner-sits
 		await openFromMenu(page)
-		const row = page.getByTestId('egress-table').getByRole('row').filter({ hasText: `E2E zgw-zaken ${stamp}` })
+		const row = page
+			.getByTestId('egress-table')
+			.getByRole('row')
+			.filter({ hasText: `E2E zgw-zaken ${stamp}` })
 		await row.getByTestId('egress-set-residency').click()
 
 		const dialog = page.getByTestId('source-residency-dialog')
 		await expect(dialog).toBeVisible()
 		await dialog.getByTestId('source-residency-country').click()
-		await page.getByRole('option', { name: /Netherlands|Nederland|NL/ }).first().click()
-		await dialog.getByTestId('source-residency-evidence').locator('input, textarea').first().fill('verwerkersovereenkomst 2026-03, art. 4')
+		await page
+			.getByRole('option', { name: /Netherlands|Nederland|NL/ })
+			.first()
+			.click()
+		await dialog
+			.getByTestId('source-residency-evidence')
+			.locator('input, textarea')
+			.first()
+			.fill('verwerkersovereenkomst 2026-03, art. 4')
 		await dialog.getByTestId('source-residency-save').click()
 		await expect(dialog).toBeHidden()
 
-		const mine = (await destinations(page.request)).find((d) => d.sourceId === partner)
+		const mine = (await destinations(page.request)).find(
+			(d) => d.sourceId === partner,
+		)
 		expect(mine?.country).toBe('NL')
 		expect(mine?.zone).toBe('eu')
 		await expect(row).toContainText('NL')
@@ -142,12 +172,19 @@ test.describe.serial('data residency', () => {
 		// @e2e connections-declare-data-residency/data-residency::every-destination-is-in-the-eu
 		const rows = await destinations(page.request)
 		const unsourced = rows.filter((d) => d.sourceId === null)
-		test.fail(unsourced.length > 0, `The call log names ${unsourced.length} host(s) no source covers; they cannot be given a country.`)
+		test.fail(
+			unsourced.length > 0,
+			`The call log names ${unsourced.length} host(s) no source covers; they cannot be given a country.`,
+		)
 		const countries = ['NL', 'DE', 'FR']
 		let index = 0
 		for (const row of rows) {
 			if (row.sourceId !== null && row.zone !== 'eu') {
-				await setResidency(page.request, row.sourceId, countries[index++ % countries.length])
+				await setResidency(
+					page.request,
+					row.sourceId,
+					countries[index++ % countries.length],
+				)
 			}
 		}
 
@@ -168,8 +205,12 @@ test.describe.serial('data residency', () => {
 		await page.getByTestId('egress-eu-only').click()
 
 		await expect(page.getByTestId('egress-error')).toContainText(gap)
-		await expect(page.getByTestId('egress-eu-only').locator('input')).not.toBeChecked()
-		const mode = await page.request.get(`${API_BASE}/egress/destinations`, { headers: HEADERS })
+		await expect(
+			page.getByTestId('egress-eu-only').locator('input'),
+		).not.toBeChecked()
+		const mode = await page.request.get(`${API_BASE}/egress/destinations`, {
+			headers: HEADERS,
+		})
 		expect(((await mode.json()) as { euOnly: boolean }).euOnly).toBe(false)
 	})
 })

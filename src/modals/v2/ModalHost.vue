@@ -228,7 +228,10 @@ export default {
 		modalBus.on(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.on(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.on(EVENT_OPEN_PROMOTION, this.openPromotion)
-		modalBus.on(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
+		modalBus.on(
+			EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP,
+			this.openSharePointPublicationSetup,
+		)
 		modalBus.on(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.on(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.on(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
@@ -250,7 +253,10 @@ export default {
 		modalBus.off(EVENT_OPEN_CONFIGURATION_IMPORT, this.openConfigurationImport)
 		modalBus.off(EVENT_OPEN_CONFIGURATION_EXPORT, this.openConfigurationExport)
 		modalBus.off(EVENT_OPEN_PROMOTION, this.openPromotion)
-		modalBus.off(EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP, this.openSharePointPublicationSetup)
+		modalBus.off(
+			EVENT_OPEN_SHAREPOINT_PUBLICATION_SETUP,
+			this.openSharePointPublicationSetup,
+		)
 		modalBus.off(EVENT_OPEN_REGISTRY_LOOKUP, this.openRegistryLookup)
 		modalBus.off(EVENT_OPEN_GATEWAY_CATALOGUE, this.openGatewayCatalogue)
 		modalBus.off(EVENT_OPEN_OPENAPI_IMPORT, this.openOpenApiImport)
@@ -455,7 +461,11 @@ export default {
 
 		/** @spec openspec/changes/archive/2026-11-25-gateway-openapi-import-and-publish/specs/openapi-import-and-publish/spec.md#requirement-an-openapi-document-is-imported-as-a-source-and-endpoints-req-oapi-001 */
 		closeOpenApiImport() {
-			this.openApiImport = { open: false, initialDocument: '', initialPrefix: '' }
+			this.openApiImport = {
+				open: false,
+				initialDocument: '',
+				initialPrefix: '',
+			}
 		},
 
 		/**

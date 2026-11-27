@@ -19,10 +19,19 @@
 	<div class="body-capture" data-testid="body-capture-window">
 		<div class="body-capture__row">
 			<span v-if="isOpen" data-testid="body-capture-state">
-				{{ t('integriq', 'Bodies are stored until {time}', { time: untilLabel }) }}
+				{{
+					t('integriq', 'Bodies are stored until {time}', {
+						time: untilLabel,
+					})
+				}}
 			</span>
 			<span v-else data-testid="body-capture-state">
-				{{ t('integriq', 'No investigation window is open. Call bodies are not stored.') }}
+				{{
+					t(
+						'integriq',
+						'No investigation window is open. Call bodies are not stored.',
+					)
+				}}
 			</span>
 			<span v-if="isOpen && reason" class="body-capture__reason">
 				{{ t('integriq', 'Reason: {reason}', { reason }) }}
@@ -98,7 +107,8 @@ export default {
 			const object = (value && value.object) || {}
 			return {
 				object,
-				objectId: (value && value.objectId) || object.uuid || object.id || null,
+				objectId:
+					(value && value.objectId) || object.uuid || object.id || null,
 			}
 		},
 
@@ -152,7 +162,10 @@ export default {
 		 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-the-source-page-shows-the-window-and-says-when-no-body-was-stored-req-ocd-011
 		 */
 		isAdmin() {
-			return typeof window.OC?.isUserAdmin === 'function' && window.OC.isUserAdmin() === true
+			return (
+				typeof window.OC?.isUserAdmin === 'function'
+				&& window.OC.isUserAdmin() === true
+			)
 		},
 	},
 
@@ -182,7 +195,9 @@ export default {
 			this.busy = true
 			try {
 				const res = await axios.delete(
-					generateUrl(`/apps/integriq/api/sources/${this.objectId}/body-capture`),
+					generateUrl(
+						`/apps/integriq/api/sources/${this.objectId}/body-capture`,
+					),
 				)
 				this.local = res.data || {}
 				this.now = Date.now()
