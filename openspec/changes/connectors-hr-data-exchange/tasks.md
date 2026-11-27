@@ -50,4 +50,5 @@ Kind: config. Size M. Halves for humaniq `payroll-external-bureau-handoff` and `
 
 ## Verification
 - [x] `openspec validate connectors-hr-data-exchange --strict` passes
-- [ ] `composer check:strict` once before push; PHPUnit exit code read
+- [x] `composer check:strict` once before push; PHPUnit exit code read
+  - 2026-11-27, PR #4028: `check:strict` red on development and identically on the branch (phpcs and phpmd on files this change does not touch; psalm cannot start in the build container, which runs PHP 8.3.6 against psalm's 8.3.16 floor; phpstan clean). PHPUnit `Tests: 11157, Errors: 4, Failures: 5`, the same failing set as development, compared test by test from the JUnit reports.
