@@ -155,7 +155,7 @@ export default {
 
 .call-log-detail__json {
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: anywhere;
 	padding: 8px;
 	border-radius: var(--border-radius);
 	background: var(--color-background-dark);
