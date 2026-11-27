@@ -27,6 +27,7 @@ namespace OCA\Integriq\Service;
 
 use Adbar\Dot;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
 use RuntimeException;
@@ -62,6 +63,10 @@ use OCA\Integriq\Service\Synchronization\WildcardResultsPath;
 use OCA\Integriq\Service\Synchronization\ZipArchiveMembers;
 use OCA\Integriq\Service\Synchronization\OpenRegisterTargetWrite;
 use OCA\Integriq\Service\Synchronization\OutcomeWriteBack;
+use OCA\Integriq\Service\Synchronization\RelatedObjectEmbedder;
+use OCA\Integriq\Service\Synchronization\RelatedWriteBack;
+use OCA\Integriq\Service\Synchronization\RemoteFileTarget;
+use OCA\Integriq\Service\Adapter\DataInfra\RemoteFiles\RemoteFileClient;
 use OCA\Integriq\Service\Synchronization\PagedFetch;
 use OCA\Integriq\Service\Synchronization\ItemRun;
 use OCA\Integriq\Service\MessageValidation\SynchronizationMessageGate;
@@ -2484,6 +2489,8 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @param ExecutionTraceContext|null $trace The active execution trace context (execution-trace REQ-001).
 	 *
 	 * @return array|null Returns a synchronization contract, an array for test cases, or null when not met.
+	 *
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-push-can-carry-the-objects-that-point-at-the-pushed-object-req-hrx-003
 	 */
 	private function synchronizeInternToExtern(
 		array $synchronization,
@@ -2508,9 +2515,11 @@ class SynchronizationService implements SynchronizationServiceInterface {
 		}
 
 		// Keep the working object in sync with pre-condition enrichment so mapping
-		// and target payload generation use the same extended data.
+		// and target payload generation use the same extended data. The objects
+		// that point at it are embedded only now, once the conditions hold, so an
+		// object that is not pushed costs no reads (REQ-HRX-003).
 		if (is_array($serializedObject) === true) {
-			$object = $serializedObject;
+			$object = $this->embedRelatedObjects(synchronization: $synchronization, object: $serializedObject);
 		}
 
 		$originId = $this->internOriginId(object: $object);
@@ -2547,6 +2556,25 @@ class SynchronizationService implements SynchronizationServiceInterface {
 
 		return $this->internContractResult(result: $result, isTest: $isTest);
 	}//end synchronizeInternToExtern()
+
+	/**
+	 * The pushed object with the objects its `sourceConfig.embedRelated` names (REQ-HRX-003).
+	 *
+	 * @param array                $synchronization The push synchronization.
+	 * @param array<string, mixed> $object          The serialized source object.
+	 *
+	 * @return array<string, mixed> The object, with the relations embedded.
+	 *
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-push-can-carry-the-objects-that-point-at-the-pushed-object-req-hrx-003
+	 */
+	private function embedRelatedObjects(array $synchronization, array $object): array {
+		$declaration = ($synchronization['sourceConfig']['embedRelated'] ?? null);
+		if (is_array($declaration) === false || $declaration === []) {
+			return $object;
+		}
+
+		return (new RelatedObjectEmbedder(objectService: $this->orObjectService))->embed(declaration: $declaration, object: $object);
+	}//end embedRelatedObjects()
 
 	/**
 	 * Remove an object from the target once the synchronization's conditions stop holding for it.
@@ -2801,6 +2829,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-deletion-garbage-collection-never-runs-for-an-incremental-sync-req-018
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-source-object-fetching-and-pagination-req-002
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-per-item-isolation-and-dead-letter-capture-during-extern-to-intern-sync-req-008
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-pull-can-move-the-object-its-written-objects-point-at-req-hrx-004
 	 */
 	private function synchronizeExternToIntern(ExternSyncRun $run, ?string $source): SynchronizationRunLog {
 		$overallStartTime = microtime(true);
@@ -2830,10 +2859,34 @@ class SynchronizationService implements SynchronizationServiceInterface {
 			$this->approvalGate->markConsumed(approvalRequest: $run->gatedApprovalRequest);
 		}
 
+		$this->applyRelatedWriteBack(run: $run);
 		$this->runFollowUps(run: $run);
 
 		return $this->finishExternRun(run: $run, overallStartTime: $overallStartTime);
 	}//end synchronizeExternToIntern()
+
+	/**
+	 * Move the objects this run's written objects point at, once, after every write (REQ-HRX-004).
+	 *
+	 * A test run writes nothing, so it moves nothing either.
+	 *
+	 * @param ExternSyncRun $run The run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-pull-can-move-the-object-its-written-objects-point-at-req-hrx-004
+	 */
+	private function applyRelatedWriteBack(ExternSyncRun $run): void {
+		if ($run->isTest === true || is_array($run->synchronization['targetConfig']['relatedWriteBack'] ?? null) === false) {
+			return;
+		}
+
+		$moved = (new RelatedWriteBack(objectService: $this->orObjectService, logger: $this->logger))->apply(
+			synchronization: $run->synchronization,
+			targetIds: $run->targetIds
+		);
+		$run->result['relatedWriteBack'] = ['moved' => $moved];
+	}//end applyRelatedWriteBack()
 
 	/**
 	 * Run a file pickup synchronization and record what it picked up on the run log.
@@ -7272,6 +7325,7 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/specs/tables-bridge/spec.md#requirement-nextcloud-table-as-a-synchronization-target-req-001
 	 * @spec openspec/specs/synchronization-engine/spec.md#requirement-nextcloud-table-sourcetarget-dispatch-req-014
 	 * @spec openspec/specs/execution-trace/spec.md#requirement-ordered-per-execution-step-timeline-req-002
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-push-can-deliver-a-file-to-an-sftp-or-ftps-server-req-hrx-005
 	 */
 	public function updateTarget(
 		array $synchronizationContract,
@@ -7351,11 +7405,74 @@ class SynchronizationService implements SynchronizationServiceInterface {
 				);
 				break;
 			default:
-				throw new Exception("Unsupported target type: $type");
+				$contract = ['contract' => $synchronizationContract, 'targetObject' => $targetObject, 'action' => (string)$action];
+				$synchronizationContract = $this->updateTargetRemoteFile(synchronization: $synchronization, write: $contract);
 		}//end switch
 
 		return $synchronizationContract;
 	}//end updateTarget()
+
+	/**
+	 * Deliver an `sftp` or `ftps` target's mapped object as a file, and write the outcome back.
+	 *
+	 * Any other target type is refused as unsupported. A delete removes nothing
+	 * on the server: a delivered file is the partner's from then on. The
+	 * contract records the path as its target id. A refused delivery writes
+	 * `writeBack.onFailure` once and fails the push, as a refused API call does.
+	 *
+	 * @param array                $synchronization The push synchronization.
+	 * @param array<string, mixed> $write           `contract`, `targetObject` and `action` (`save` or `delete`).
+	 *
+	 * @return array The contract.
+	 *
+	 * @throws Exception When the target type is unsupported, no remote file client is available, or the delivery is refused.
+	 *
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-push-can-deliver-a-file-to-an-sftp-or-ftps-server-req-hrx-005
+	 */
+	private function updateTargetRemoteFile(array $synchronization, array $write): array {
+		$type = (string)($synchronization['targetType'] ?? '');
+		if (in_array($type, RemoteFileTarget::TYPES, true) === false) {
+			throw new Exception("Unsupported target type: $type");
+		}
+
+		$synchronizationContract = $write['contract'];
+		$targetObject = $write['targetObject'];
+		if ($write['action'] === 'delete') {
+			return $synchronizationContract;
+		}
+
+		$client = $this->containerInterface->get(RemoteFileClient::class);
+		if ($client instanceof RemoteFileClient === false) {
+			throw new Exception('File delivery is not available on this instance.');
+		}
+
+		$source = $this->findSynchronizationSource(synchronization: $synchronization, id: ($synchronization['targetId'] ?? null))->jsonSerialize();
+		try {
+			$delivered = (new RemoteFileTarget(client: $client))->deliver(
+				source: $source,
+				targetConfig: (array)($synchronization['targetConfig'] ?? []),
+				targetObject: ($targetObject ?? [])
+			);
+		} catch (\Throwable $e) {
+			$this->writeOutcomeBack(
+				synchronization: $synchronization,
+				contract: $synchronizationContract,
+				outcome: OutcomeWriteBack::FAILURE,
+				context: ['error' => ['message' => $this->outcomeWriteBack()->truncate(message: $e->getMessage())]]
+			);
+			throw $e;
+		}
+
+		$synchronizationContract['targetId'] = $delivered['path'];
+		$this->writeOutcomeBack(
+			synchronization: $synchronization,
+			contract: $synchronizationContract,
+			outcome: OutcomeWriteBack::SUCCESS,
+			context: ['response' => $delivered, 'targetId' => $delivered['path']]
+		);
+
+		return $synchronizationContract;
+	}//end updateTargetRemoteFile()
 
 	/**
 	 * Create/update/delete a `nextcloud-table` target row for a synchronization contract.
@@ -11533,8 +11650,10 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/changes/connectors-case-system-document-delivery/specs/case-system-document-delivery/spec.md#requirement-a-push-writes-its-outcome-back-onto-the-object-that-started-it-req-csd-001
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-write-back-can-stamp-the-time-req-hrx-006
 	 */
 	private function writeOutcomeBack(array $synchronization, array $contract, string $outcome, array $context): void {
+		$context['now'] = ($context['now'] ?? (new DateTimeImmutable())->format(DATE_ATOM));
 		$fields   = $this->outcomeWriteBack()->fields(writeBack: ($synchronization['writeBack'] ?? null), outcome: $outcome, context: $context);
 		$originId = (string)($contract['originId'] ?? '');
 		$sourceId = explode(separator: '/', string: (string)($synchronization['sourceId'] ?? ''));

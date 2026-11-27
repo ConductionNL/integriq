@@ -1,0 +1,236 @@
+{
+  "$comment": "ADR-037 register fragment (connectors-hr-data-exchange, Task 2, design D1 and D2). Seeds the three payroll handoff pushes (Loket.nl, Nmbrs, SFTP drop) over the bureau mappings of Task 1, and the pickup of the bureau's return file into humaniq Payslips with its mapping. The pushes ship unbound (no source schema) and their bureau sources are dormant, so nothing runs until an administrator links them. The engine features they use are generic: sourceConfig.embedRelated, the sftp target type, the {{ now }} write-back placeholder and targetConfig.relatedWriteBack. Payslip pulls from the Loket.nl and Nmbrs APIs are not seeded: neither publishes the payslip read this needs to record an example from. Does NOT edit lib/Settings/integriq_register.json.",
+  "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "payroll-handoff-push-loket"
+        },
+        "name": "humaniq payroll handoffs to Loket.nl",
+        "description": "Delivers each humaniq PayrollHandoff that HR sets to klaargezet to a payroll bureau on Loket.nl, once, with its PayrollHandoffMutation objects and its administration embedded (sourceConfig.embedRelated), in the bureau's format (mapping payroll-handoff-to-loket-mutations). On success it writes the declared verzenden transition onto the handoff: status verzonden, deliveryReference {{ response.id }} and deliveredAt the time of delivery. A refused delivery writes nothing to the handoff's status; the error is on the synchronization log, so HR can reopen the handoff. Disabled until an administrator links it: choose humaniq's PayrollHandoff schema as the source, add a condition on administrationId for the administrations this bureau runs, and set up and enable the source loket-payroll. Check the endpoint against your Loket.nl API documentation before enabling.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceConfig": {
+          "embedRelated": {
+            "mutations": {
+              "schema": "humaniq/PayrollHandoffMutation",
+              "filters": {
+                "handoffId": "id"
+              }
+            },
+            "administration": {
+              "schema": "humaniq/hrAdministration",
+              "filters": {
+                "administrationId": "administrationId"
+              },
+              "single": true
+            }
+          }
+        },
+        "sourceTargetMapping": "payroll-handoff-to-loket-mutations",
+        "targetId": "loket-payroll",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/payrollmutations",
+          "targetIdPosition": "id"
+        },
+        "conditions": [
+          {
+            "==": [
+              {
+                "var": "status"
+              },
+              "klaargezet"
+            ]
+          }
+        ],
+        "writeBack": {
+          "onSuccess": {
+            "status": "verzonden",
+            "deliveryReference": "{{ response.id }}",
+            "deliveredAt": "{{ now }}"
+          }
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "payroll-handoff-push-nmbrs"
+        },
+        "name": "humaniq payroll handoffs to Nmbrs",
+        "description": "Delivers each humaniq PayrollHandoff that HR sets to klaargezet to a payroll bureau on Nmbrs, once, with its PayrollHandoffMutation objects and its administration embedded (sourceConfig.embedRelated), in the bureau's format (mapping payroll-handoff-to-nmbrs-changes). On success it writes the declared verzenden transition onto the handoff: status verzonden, deliveryReference {{ response.id }} and deliveredAt the time of delivery. A refused delivery writes nothing to the handoff's status; the error is on the synchronization log, so HR can reopen the handoff. Disabled until an administrator links it: choose humaniq's PayrollHandoff schema as the source, add a condition on administrationId for the administrations this bureau runs, and set up and enable the source nmbrs-payroll. Check the endpoint against your Nmbrs API documentation before enabling.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceConfig": {
+          "embedRelated": {
+            "mutations": {
+              "schema": "humaniq/PayrollHandoffMutation",
+              "filters": {
+                "handoffId": "id"
+              }
+            },
+            "administration": {
+              "schema": "humaniq/hrAdministration",
+              "filters": {
+                "administrationId": "administrationId"
+              },
+              "single": true
+            }
+          }
+        },
+        "sourceTargetMapping": "payroll-handoff-to-nmbrs-changes",
+        "targetId": "nmbrs-payroll",
+        "targetType": "api",
+        "targetConfig": {
+          "endpoint": "/payrollchanges",
+          "targetIdPosition": "id"
+        },
+        "conditions": [
+          {
+            "==": [
+              {
+                "var": "status"
+              },
+              "klaargezet"
+            ]
+          }
+        ],
+        "writeBack": {
+          "onSuccess": {
+            "status": "verzonden",
+            "deliveryReference": "{{ response.id }}",
+            "deliveredAt": "{{ now }}"
+          }
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "payroll-handoff-push-sftp"
+        },
+        "name": "humaniq payroll handoffs to a bureau's SFTP drop",
+        "description": "Delivers each humaniq PayrollHandoff that HR sets to klaargezet to a payroll bureau's SFTP drop as one CSV file per administration and period, once, with its PayrollHandoffMutation objects and its administration embedded (sourceConfig.embedRelated), in the bureau's format (mapping payroll-handoff-to-csv-rows). On success it writes the declared verzenden transition onto the handoff: status verzonden, deliveryReference {{ response.path }} and deliveredAt the time of delivery. A refused delivery writes nothing to the handoff's status; the error is on the synchronization log, so HR can reopen the handoff. Disabled until an administrator links it: choose humaniq's PayrollHandoff schema as the source, add a condition on administrationId for the administrations this bureau runs, and set up and enable the source payroll-sftp-drop. The file goes into the folder incoming under the source's root path; agree the folder and the delimiter with the bureau.",
+        "sourceId": "",
+        "sourceType": "register/schema",
+        "sourceConfig": {
+          "embedRelated": {
+            "mutations": {
+              "schema": "humaniq/PayrollHandoffMutation",
+              "filters": {
+                "handoffId": "id"
+              }
+            },
+            "administration": {
+              "schema": "humaniq/hrAdministration",
+              "filters": {
+                "administrationId": "administrationId"
+              },
+              "single": true
+            }
+          }
+        },
+        "sourceTargetMapping": "payroll-handoff-to-csv-rows",
+        "targetId": "payroll-sftp-drop",
+        "targetType": "sftp",
+        "targetConfig": {
+          "path": "incoming",
+          "fileNameField": "fileName",
+          "rowsField": "rows",
+          "delimiter": ","
+        },
+        "conditions": [
+          {
+            "==": [
+              {
+                "var": "status"
+              },
+              "klaargezet"
+            ]
+          }
+        ],
+        "writeBack": {
+          "onSuccess": {
+            "status": "verzonden",
+            "deliveryReference": "{{ response.path }}",
+            "deliveredAt": "{{ now }}"
+          }
+        },
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "mapping",
+          "slug": "payroll-return-row-to-payslip"
+        },
+        "name": "Payroll bureau return file row to a humaniq Payslip",
+        "description": "One row of a payroll bureau's return file (CSV, agreed with the bureau: loonheffingennummer, periode, medewerker, strookId, bruto, netto, loonheffing, uren) as a humaniq Payslip: the humaniq employee id, the period, gross and net pay, the wage tax and the hours, the bureau as externalSource, and the handoff it came back from as payrollHandoffId. The administration is found by its loonheffingennummer and the handoff by administration and period, through lookup(), so humaniq/hrAdministration and humaniq/PayrollHandoff must be on the mapping lookup allowlist. A decimal comma is read as a decimal point. Used by payroll-payslip-pull-sftp (connectors-hr-data-exchange D2).",
+        "mapping": {
+          "employeeId": "{{ medewerker }}",
+          "period": "{{ periode }}",
+          "administrationId": "{{ lookup('humaniq/hrAdministration', {'loonheffingennummer': loonheffingennummer}, 'administrationId', '') }}",
+          "payrollHandoffId": "{{ lookup('humaniq/PayrollHandoff', {'administrationId': lookup('humaniq/hrAdministration', {'loonheffingennummer': loonheffingennummer}, 'administrationId', ''), 'period': periode}, 'id', '') }}",
+          "grossPay": "{{ bruto|replace({',': '.'}) }}",
+          "nettoPay": "{{ netto|replace({',': '.'}) }}",
+          "loonheffing": "{{ loonheffing|default('0')|replace({',': '.'}) }}",
+          "hoursWorked": "{{ uren|default('0')|replace({',': '.'}) }}",
+          "externalSource": "payroll-sftp-drop"
+        },
+        "unset": [],
+        "cast": {
+          "grossPay": "float",
+          "nettoPay": "float",
+          "loonheffing": "float",
+          "hoursWorked": "float"
+        },
+        "passThrough": false,
+        "version": "1.0.0"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "synchronization",
+          "slug": "payroll-payslip-pull-sftp"
+        },
+        "name": "Payslips from a bureau's SFTP drop to humaniq",
+        "description": "Picks up the payroll bureau's return files from the folder outgoing on the SFTP drop, writes each row into humaniq as one Payslip keyed on the bureau's payslip id (strookId), so a file read twice leaves one Payslip per row, and archives each file to outgoing/archive once its rows are written. After the run, each handoff the new payslips name that is still verzonden is moved to ontvangen with receivedAt (targetConfig.relatedWriteBack), once, so humaniq's intake check sees every payslip of the file. Off until the source payroll-sftp-drop is set up and enabled; put humaniq/hrAdministration and humaniq/PayrollHandoff on the mapping lookup allowlist first.",
+        "sourceId": "payroll-sftp-drop",
+        "sourceType": "sftp",
+        "sourceConfig": {
+          "target": "mapping",
+          "path": "outgoing",
+          "pattern": "*.csv",
+          "fileFormat": "csv",
+          "csvDelimiter": ",",
+          "after": "move",
+          "archivePath": "outgoing/archive",
+          "idPosition": "strookId"
+        },
+        "sourceTargetMapping": "payroll-return-row-to-payslip",
+        "targetId": "humaniq/Payslip",
+        "targetType": "register/schema",
+        "targetConfig": {
+          "relatedWriteBack": {
+            "schema": "humaniq/PayrollHandoff",
+            "field": "payrollHandoffId",
+            "when": {
+              "status": "verzonden"
+            },
+            "set": {
+              "status": "ontvangen",
+              "receivedAt": "{{ now }}"
+            }
+          }
+        },
+        "conditions": [],
+        "version": "1.0.0"
+      }
+    ]
+  }
+}
