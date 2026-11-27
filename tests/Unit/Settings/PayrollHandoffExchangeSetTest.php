@@ -67,7 +67,11 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 	private const PUSHES = [
 		'payroll-handoff-push-loket' => ['fragment' => 'loket-payroll-source.json', 'source' => 'loket-payroll', 'example' => 'loket-mutations.json'],
 		'payroll-handoff-push-nmbrs' => ['fragment' => 'nmbrs-payroll-source.json', 'source' => 'nmbrs-payroll', 'example' => 'nmbrs-changes.json'],
-		'payroll-handoff-push-sftp'  => ['fragment' => 'payroll-sftp-drop-source.json', 'source' => 'payroll-sftp-drop', 'example' => 'sftp-drop-file.json'],
+		'payroll-handoff-push-sftp'  => [
+			'fragment' => 'payroll-sftp-drop-source.json',
+			'source'   => 'payroll-sftp-drop',
+			'example'  => 'sftp-drop-file.json',
+		],
 	];
 
 	/**
@@ -120,7 +124,7 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 	 * @return ORObjectService
 	 */
 	private function register(array $rows): ORObjectService {
-		$or = $this->createMock(ORObjectService::class);
+		$or = $this->createMock(originalClassName: ORObjectService::class);
 		$or->method('findAll')->willReturnCallback(
 			static function (array $config = []) use ($rows): array {
 				$filters = $config['filters'];
@@ -197,17 +201,24 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 		$push = $this->seeds()['synchronization'][$slug];
 		$holds = new ReflectionMethod(SynchronizationService::class, 'conditionsHold');
 
-		$this->assertTrue($holds->invoke(null, $push['conditions'], ['status' => 'klaargezet']));
+		$this->assertTrue(condition: $holds->invoke(null, $push['conditions'], ['status' => 'klaargezet']));
 		foreach (['concept', 'verzonden', 'ontvangen', 'afgesloten'] as $status) {
-			$this->assertFalse($holds->invoke(null, $push['conditions'], ['status' => $status]), 'A ' . $status . ' handoff is not delivered again.');
+			$this->assertFalse(
+				condition: $holds->invoke(null, $push['conditions'], ['status' => $status]),
+				message: 'A ' . $status . ' handoff is not delivered again.'
+			);
 		}
 
-		$this->assertSame('register/schema', $push['sourceType']);
-		$this->assertSame('', $push['sourceId'], 'Unbound: nothing runs until an administrator links it.');
-		$this->assertSame(['status', 'deliveryReference', 'deliveredAt'], array_keys($push['writeBack']['onSuccess']));
-		$this->assertSame('verzonden', $push['writeBack']['onSuccess']['status']);
-		$this->assertSame('{{ now }}', $push['writeBack']['onSuccess']['deliveredAt']);
-		$this->assertArrayNotHasKey('onFailure', $push['writeBack'], 'A refused delivery writes nothing to the status (design D1).');
+		$this->assertSame(expected: 'register/schema', actual: $push['sourceType']);
+		$this->assertSame(expected: '', actual: $push['sourceId'], message: 'Unbound: nothing runs until an administrator links it.');
+		$this->assertSame(expected: ['status', 'deliveryReference', 'deliveredAt'], actual: array_keys($push['writeBack']['onSuccess']));
+		$this->assertSame(expected: 'verzonden', actual: $push['writeBack']['onSuccess']['status']);
+		$this->assertSame(expected: '{{ now }}', actual: $push['writeBack']['onSuccess']['deliveredAt']);
+		$this->assertArrayNotHasKey(
+			key: 'onFailure',
+			array: $push['writeBack'],
+			message: 'A refused delivery writes nothing to the status (design D1).'
+		);
 	}//end testEachPushSendsAReadyHandoffAndWritesVerzondenBack()
 
 	/**
@@ -223,9 +234,9 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 		$push = $this->seeds()['synchronization'][$slug];
 		$bureau = $this->seeds(fragment: self::PUSHES[$slug]['fragment']);
 
-		$this->assertSame(self::PUSHES[$slug]['source'], $push['targetId']);
-		$this->assertFalse($bureau['source'][$push['targetId']]['isEnabled']);
-		$this->assertArrayHasKey($push['sourceTargetMapping'], $bureau['mapping']);
+		$this->assertSame(expected: self::PUSHES[$slug]['source'], actual: $push['targetId']);
+		$this->assertFalse(condition: $bureau['source'][$push['targetId']]['isEnabled']);
+		$this->assertArrayHasKey(key: $push['sourceTargetMapping'], array: $bureau['mapping']);
 	}//end testEachPushTargetsItsDormantBureau()
 
 	/**
@@ -248,8 +259,8 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 		$mapping = $this->seeds(fragment: self::PUSHES[$slug]['fragment'])['mapping'][$push['sourceTargetMapping']];
 
 		$this->assertSame(
-			$this->fixture(file: self::PUSHES[$slug]['example']),
-			$this->mappingService()->executeMapping(mapping: $mapping, input: $embedded)
+			expected: $this->fixture(file: self::PUSHES[$slug]['example']),
+			actual: $this->mappingService()->executeMapping(mapping: $mapping, input: $embedded)
 		);
 	}//end testTheEmbeddedHandoffMatchesTheBureausExample()
 
@@ -262,7 +273,7 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 		$push = $this->seeds()['synchronization']['payroll-handoff-push-sftp'];
 		$example = $this->fixture(file: 'sftp-drop-file.json');
 		$delivered = [];
-		$client = $this->createMock(RemoteFileClient::class);
+		$client = $this->createMock(originalClassName: RemoteFileClient::class);
 		$client->method('deliver')->willReturnCallback(
 			static function (array $source, string $path, $stream) use (&$delivered): void {
 				$delivered[$path] = (string)stream_get_contents($stream);
@@ -271,11 +282,11 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 
 		$result = (new RemoteFileTarget(client: $client))->deliver(source: [], targetConfig: $push['targetConfig'], targetObject: $example);
 
-		$this->assertSame('sftp', $push['targetType']);
-		$this->assertSame('incoming/812345671L01-2026-09.csv', $result['path']);
+		$this->assertSame(expected: 'sftp', actual: $push['targetType']);
+		$this->assertSame(expected: 'incoming/812345671L01-2026-09.csv', actual: $result['path']);
 		$lines = explode("\n", trim($delivered['incoming/812345671L01-2026-09.csv']));
-		$this->assertSame('loonheffingennummer,periode,medewerker,soort,ingangsdatum,veld,oud,nieuw', $lines[0]);
-		$this->assertCount((count($example['rows']) + 1), $lines, 'A header and one line per changed field.');
+		$this->assertSame(expected: 'loonheffingennummer,periode,medewerker,soort,ingangsdatum,veld,oud,nieuw', actual: $lines[0]);
+		$this->assertCount(expectedCount: (count($example['rows']) + 1), haystack: $lines, message: 'A header and one line per changed field.');
 	}//end testTheSftpPushWritesOneFileIntoIncoming()
 
 	/**
@@ -285,28 +296,36 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 	 */
 	public function testTheReturnFileBecomesTwoPayslipsOfTheHandoff(): void {
 		$pull = $this->seeds()['synchronization']['payroll-payslip-pull-sftp'];
-		$records = (new PickedFileRecords())->read(name: 'return-2026-09.csv', content: $this->fixtureText(file: 'return-2026-09.csv'), config: $pull['sourceConfig']);
+		$records = (new PickedFileRecords())->read(
+			name: 'return-2026-09.csv',
+			content: $this->fixtureText(file: 'return-2026-09.csv'),
+			config: $pull['sourceConfig']
+		);
 		$mapping = $this->seeds()['mapping'][$pull['sourceTargetMapping']];
 		$service = $this->mappingService(lookup: $this->lookup(allowed: true));
 
 		$payslips = array_map(static fn (array $record): array => $service->executeMapping(mapping: $mapping, input: $record), $records);
 
-		$this->assertCount(2, $payslips);
-		$this->assertSame(['LS-2026-09-0001', 'LS-2026-09-0002'], array_column($records, $pull['sourceConfig']['idPosition']), 'Keyed on the bureau\'s payslip id.');
+		$this->assertCount(expectedCount: 2, haystack: $payslips);
+		$this->assertSame(
+			expected: ['LS-2026-09-0001', 'LS-2026-09-0002'],
+			actual: array_column($records, $pull['sourceConfig']['idPosition']),
+			message: 'Keyed on the bureau\'s payslip id.'
+		);
 		foreach ($payslips as $payslip) {
-			$this->assertSame(self::HANDOFF_ID, $payslip['payrollHandoffId']);
-			$this->assertSame('a7d2c4e1-5b6f-4a3c-8d9e-0f1a2b3c4d5e', $payslip['administrationId']);
-			$this->assertSame('2026-09', $payslip['period']);
-			$this->assertSame('payroll-sftp-drop', $payslip['externalSource']);
+			$this->assertSame(expected: self::HANDOFF_ID, actual: $payslip['payrollHandoffId']);
+			$this->assertSame(expected: 'a7d2c4e1-5b6f-4a3c-8d9e-0f1a2b3c4d5e', actual: $payslip['administrationId']);
+			$this->assertSame(expected: '2026-09', actual: $payslip['period']);
+			$this->assertSame(expected: 'payroll-sftp-drop', actual: $payslip['externalSource']);
 			foreach (['employeeId', 'period', 'grossPay', 'nettoPay'] as $required) {
-				$this->assertArrayHasKey($required, $payslip, 'humaniq\'s Payslip requires ' . $required . '.');
+				$this->assertArrayHasKey(key: $required, array: $payslip, message: 'humaniq\'s Payslip requires ' . $required . '.');
 			}
 		}
 
-		$this->assertSame('6f1c2b9e-3d4a-4e5f-9a8b-7c6d5e4f3a21', $payslips[0]['employeeId']);
-		$this->assertSame(3950.0, $payslips[0]['grossPay'], 'A decimal comma is read as a decimal point.');
-		$this->assertSame(2810.45, $payslips[0]['nettoPay']);
-		$this->assertSame(156.0, $payslips[1]['hoursWorked']);
+		$this->assertSame(expected: '6f1c2b9e-3d4a-4e5f-9a8b-7c6d5e4f3a21', actual: $payslips[0]['employeeId']);
+		$this->assertSame(expected: 3950.0, actual: $payslips[0]['grossPay'], message: 'A decimal comma is read as a decimal point.');
+		$this->assertSame(expected: 2810.45, actual: $payslips[0]['nettoPay']);
+		$this->assertSame(expected: 156.0, actual: $payslips[1]['hoursWorked']);
 	}//end testTheReturnFileBecomesTwoPayslipsOfTheHandoff()
 
 	/**
@@ -316,11 +335,18 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 	 */
 	public function testTheReturnFileNeedsTheLookupAllowlist(): void {
 		$pull = $this->seeds()['synchronization']['payroll-payslip-pull-sftp'];
-		$records = (new PickedFileRecords())->read(name: 'return-2026-09.csv', content: $this->fixtureText(file: 'return-2026-09.csv'), config: $pull['sourceConfig']);
+		$records = (new PickedFileRecords())->read(
+			name: 'return-2026-09.csv',
+			content: $this->fixtureText(file: 'return-2026-09.csv'),
+			config: $pull['sourceConfig']
+		);
 
-		$this->expectException(\Throwable::class);
-		$this->expectExceptionMessage('lookup allowlist');
-		$this->mappingService(lookup: $this->lookup(allowed: false))->executeMapping(mapping: $this->seeds()['mapping'][$pull['sourceTargetMapping']], input: $records[0]);
+		$this->expectException(exception: \Throwable::class);
+		$this->expectExceptionMessage(message: 'lookup allowlist');
+		$this->mappingService(lookup: $this->lookup(allowed: false))->executeMapping(
+			mapping: $this->seeds()['mapping'][$pull['sourceTargetMapping']],
+			input: $records[0]
+		);
 	}//end testTheReturnFileNeedsTheLookupAllowlist()
 
 	/**
@@ -336,7 +362,7 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 			'PayrollHandoff/' . self::HANDOFF_ID => ['period' => '2026-09', 'status' => 'verzonden'],
 		];
 		$saves = [];
-		$or = $this->createMock(ORObjectService::class);
+		$or = $this->createMock(originalClassName: ORObjectService::class);
 		$or->method('find')->willReturnCallback(
 			static function ($id, ?ObjectFindOptions $options = null) use ($store): ?ObjectEntity {
 				$data = ($store[$options->schema . '/' . $id] ?? null);
@@ -356,17 +382,17 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 			}
 		);
 
-		$moved = (new RelatedWriteBack(objectService: $or, logger: $this->createMock(LoggerInterface::class)))->apply(
+		$moved = (new RelatedWriteBack(objectService: $or, logger: $this->createMock(originalClassName: LoggerInterface::class)))->apply(
 			synchronization: $pull,
 			targetIds: ['slip-1', 'slip-2']
 		);
 
-		$this->assertSame('humaniq/Payslip', $pull['targetId']);
-		$this->assertSame(1, $moved);
-		$this->assertSame('PayrollHandoff', $saves[0]['schema']);
-		$this->assertSame(self::HANDOFF_ID, $saves[0]['uuid']);
-		$this->assertSame('ontvangen', $saves[0]['object']['status']);
-		$this->assertNotEmpty($saves[0]['object']['receivedAt']);
+		$this->assertSame(expected: 'humaniq/Payslip', actual: $pull['targetId']);
+		$this->assertSame(expected: 1, actual: $moved);
+		$this->assertSame(expected: 'PayrollHandoff', actual: $saves[0]['schema']);
+		$this->assertSame(expected: self::HANDOFF_ID, actual: $saves[0]['uuid']);
+		$this->assertSame(expected: 'ontvangen', actual: $saves[0]['object']['status']);
+		$this->assertNotEmpty(actual: $saves[0]['object']['receivedAt']);
 	}//end testThePickupMovesTheHandoffToOntvangen()
 
 	/**
@@ -388,10 +414,15 @@ final class PayrollHandoffExchangeSetTest extends TestCase {
 		$allowlist = new LookupAllowlist(appConfig: $appConfig, logger: $this->createMock(originalClassName: LoggerInterface::class));
 
 		[$handoff, $rows] = $this->storedHandoff();
-		$or = $this->register(rows: $rows + ['PayrollHandoff' => [$handoff, ['id' => 'older', 'administrationId' => $handoff['administrationId'], 'period' => '2026-08']]]);
+		$older = ['id' => 'older', 'administrationId' => $handoff['administrationId'], 'period' => '2026-08'];
+		$or = $this->register(rows: $rows + ['PayrollHandoff' => [$handoff, $older]]);
 		$objects = $this->createMock(originalClassName: SourceMappingServiceInterface::class);
 		$objects->method('getOpenRegisters')->willReturn($or);
 
-		return new MappingLookup(allowlist: $allowlist, objectService: $objects, logger: $this->createMock(originalClassName: LoggerInterface::class));
+		return new MappingLookup(
+			allowlist: $allowlist,
+			objectService: $objects,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
+		);
 	}//end lookup()
 }//end class

@@ -46,7 +46,7 @@ final class RelatedObjectEmbedderTest extends TestCase {
 	 * @return RelatedObjectEmbedder
 	 */
 	private function embedder(array $rows): RelatedObjectEmbedder {
-		$objects = $this->createMock(OrObjectService::class);
+		$objects = $this->createMock(originalClassName: OrObjectService::class);
 		$objects->method('findAll')->willReturnCallback(
 			function (array $config = [], bool $_rbac = true, bool $_multitenancy = true) use ($rows): array {
 				$this->queries[] = $config + ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
@@ -86,11 +86,11 @@ final class RelatedObjectEmbedderTest extends TestCase {
 			]
 		)->embed(declaration: self::DECLARATION, object: self::HANDOFF);
 
-		$this->assertSame(['salary', 'bank-account'], array_column($embedded['mutations'], 'kind'));
-		$this->assertSame('812345671L01', $embedded['administration']['loonheffingennummer']);
-		$this->assertSame('klaargezet', $embedded['status'], 'The pushed object keeps its own fields.');
-		$this->assertSame('humaniq', $this->queries[0]['filters']['register']);
-		$this->assertFalse($this->queries[0]['_rbac'], 'An administrator wrote the synchronization; the read is a system read.');
+		$this->assertSame(expected: ['salary', 'bank-account'], actual: array_column($embedded['mutations'], 'kind'));
+		$this->assertSame(expected: '812345671L01', actual: $embedded['administration']['loonheffingennummer']);
+		$this->assertSame(expected: 'klaargezet', actual: $embedded['status'], message: 'The pushed object keeps its own fields.');
+		$this->assertSame(expected: 'humaniq', actual: $this->queries[0]['filters']['register']);
+		$this->assertFalse(condition: $this->queries[0]['_rbac'], message: 'An administrator wrote the synchronization; the read is a system read.');
 	}//end testTheRelatedObjectsAreEmbedded()
 
 	/**
@@ -104,9 +104,9 @@ final class RelatedObjectEmbedderTest extends TestCase {
 			object: ['status' => 'klaargezet', 'administrationId' => '']
 		);
 
-		$this->assertSame([], $embedded['mutations']);
-		$this->assertNull($embedded['administration']);
-		$this->assertSame([], $this->queries, 'No query without every filter value.');
+		$this->assertSame(expected: [], actual: $embedded['mutations']);
+		$this->assertNull(actual: $embedded['administration']);
+		$this->assertSame(expected: [], actual: $this->queries, message: 'No query without every filter value.');
 	}//end testAFilterThatReadsNothingNeverWidensTheQuery()
 
 	/**
@@ -120,7 +120,7 @@ final class RelatedObjectEmbedderTest extends TestCase {
 			object: ['@self' => ['id' => 'handoff-9']]
 		);
 
-		$this->assertSame('start', $embedded['mutations'][0]['kind']);
+		$this->assertSame(expected: 'start', actual: $embedded['mutations'][0]['kind']);
 	}//end testTheIdFallsBackToTheObjectsOwnUuid()
 
 	/**
@@ -133,7 +133,7 @@ final class RelatedObjectEmbedderTest extends TestCase {
 			rows: ['hrAdministration' => [['administrationId' => 'adm-1'], ['administrationId' => 'adm-1']]]
 		)->embed(declaration: ['administration' => self::DECLARATION['administration']], object: self::HANDOFF);
 
-		$this->assertNull($embedded['administration']);
+		$this->assertNull(actual: $embedded['administration']);
 	}//end testAnAmbiguousSingleRelationEmbedsNull()
 
 	/**
@@ -144,9 +144,12 @@ final class RelatedObjectEmbedderTest extends TestCase {
 	public function testMoreMatchesThanTheCapRefuseThePush(): void {
 		$rows = array_fill(0, (RelatedObjectEmbedder::MAX_RELATED + 1), ['handoffId' => 'handoff-1']);
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('partial list');
-		$this->embedder(rows: ['PayrollHandoffMutation' => $rows])->embed(declaration: ['mutations' => self::DECLARATION['mutations']], object: self::HANDOFF);
+		$this->expectException(exception: RuntimeException::class);
+		$this->expectExceptionMessage(message: 'partial list');
+		$this->embedder(rows: ['PayrollHandoffMutation' => $rows])->embed(
+			declaration: ['mutations' => self::DECLARATION['mutations']],
+			object: self::HANDOFF
+		);
 	}//end testMoreMatchesThanTheCapRefuseThePush()
 
 	/**
@@ -155,9 +158,12 @@ final class RelatedObjectEmbedderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMalformedDeclarationIsRefused(): void {
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('embedRelated "mutations"');
-		$this->embedder(rows: [])->embed(declaration: ['mutations' => ['schema' => 'PayrollHandoffMutation', 'filters' => []]], object: self::HANDOFF);
+		$this->expectException(exception: RuntimeException::class);
+		$this->expectExceptionMessage(message: 'embedRelated "mutations"');
+		$this->embedder(rows: [])->embed(
+			declaration: ['mutations' => ['schema' => 'PayrollHandoffMutation', 'filters' => []]],
+			object: self::HANDOFF
+		);
 	}//end testAMalformedDeclarationIsRefused()
 
 	/**
@@ -168,8 +174,8 @@ final class RelatedObjectEmbedderTest extends TestCase {
 	public function testNoDeclarationLeavesTheObjectAlone(): void {
 		$embedder = $this->embedder(rows: []);
 
-		$this->assertSame(self::HANDOFF, $embedder->embed(declaration: null, object: self::HANDOFF));
-		$this->assertSame(self::HANDOFF, $embedder->embed(declaration: [], object: self::HANDOFF));
-		$this->assertSame([], $this->queries);
+		$this->assertSame(expected: self::HANDOFF, actual: $embedder->embed(declaration: null, object: self::HANDOFF));
+		$this->assertSame(expected: self::HANDOFF, actual: $embedder->embed(declaration: [], object: self::HANDOFF));
+		$this->assertSame(expected: [], actual: $this->queries);
 	}//end testNoDeclarationLeavesTheObjectAlone()
 }//end class

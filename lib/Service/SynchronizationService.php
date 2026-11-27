@@ -7404,17 +7404,9 @@ class SynchronizationService implements SynchronizationServiceInterface {
 					action: $action
 				);
 				break;
-			case 'sftp':
-			case 'ftps':
-				$synchronizationContract = $this->updateTargetRemoteFile(
-					synchronizationContract: $synchronizationContract,
-					synchronization: $synchronization,
-					targetObject: $targetObject,
-					action: $action
-				);
-				break;
 			default:
-				throw new Exception("Unsupported target type: $type");
+				$contract = ['contract' => $synchronizationContract, 'targetObject' => $targetObject, 'action' => (string)$action];
+				$synchronizationContract = $this->updateTargetRemoteFile(synchronization: $synchronization, write: $contract);
 		}//end switch
 
 		return $synchronizationContract;
@@ -7423,24 +7415,29 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	/**
 	 * Deliver an `sftp` or `ftps` target's mapped object as a file, and write the outcome back.
 	 *
-	 * A delete removes nothing on the server: a delivered file is the partner's
-	 * from then on. The contract records the path as its target id. A refused
-	 * delivery writes `writeBack.onFailure` once and fails the push, as a
-	 * refused API call does.
+	 * Any other target type is refused as unsupported. A delete removes nothing
+	 * on the server: a delivered file is the partner's from then on. The
+	 * contract records the path as its target id. A refused delivery writes
+	 * `writeBack.onFailure` once and fails the push, as a refused API call does.
 	 *
-	 * @param array      $synchronizationContract The contract.
-	 * @param array      $synchronization         The push synchronization.
-	 * @param array|null $targetObject            The mapped object.
-	 * @param string     $action                  `save` or `delete`.
+	 * @param array                $synchronization The push synchronization.
+	 * @param array<string, mixed> $write           `contract`, `targetObject` and `action` (`save` or `delete`).
 	 *
 	 * @return array The contract.
 	 *
-	 * @throws Exception When no remote file client is available, or the delivery is refused.
+	 * @throws Exception When the target type is unsupported, no remote file client is available, or the delivery is refused.
 	 *
 	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-push-can-deliver-a-file-to-an-sftp-or-ftps-server-req-hrx-005
 	 */
-	private function updateTargetRemoteFile(array $synchronizationContract, array $synchronization, ?array $targetObject, string $action): array {
-		if ($action === 'delete') {
+	private function updateTargetRemoteFile(array $synchronization, array $write): array {
+		$type = (string)($synchronization['targetType'] ?? '');
+		if (in_array($type, RemoteFileTarget::TYPES, true) === false) {
+			throw new Exception("Unsupported target type: $type");
+		}
+
+		$synchronizationContract = $write['contract'];
+		$targetObject = $write['targetObject'];
+		if ($write['action'] === 'delete') {
 			return $synchronizationContract;
 		}
 

@@ -108,8 +108,7 @@ class RelatedWriteBack {
 		$field    = (string)($declared['field'] ?? '');
 		$set      = ($declared['set'] ?? null);
 		$when     = ($declared['when'] ?? []);
-		$schemaOk = (count($schema) === 2 && $schema[0] !== '' && $schema[1] !== '');
-		if ($schemaOk === false || $field === '' || is_array($set) === false || $set === [] || is_array($when) === false) {
+		if ($this->wellFormed(schema: $schema, field: $field, set: $set, when: $when) === false) {
 			$this->logger->warning(
 				'Synchronization ' . (string)($synchronization['id'] ?? '')
 				. ': relatedWriteBack needs a schema as "register/schema", a field and a set; it is ignored.'
@@ -119,6 +118,24 @@ class RelatedWriteBack {
 
 		return ['register' => $schema[0], 'schema' => $schema[1], 'field' => $field, 'when' => $when, 'set' => $set];
 	}//end config()
+
+	/**
+	 * Whether a declaration names a register and schema, a field and something to set.
+	 *
+	 * @param list<string> $schema The schema, split on `/`.
+	 * @param string       $field  The property holding the related id.
+	 * @param mixed        $set    The fields to set.
+	 * @param mixed        $when   The required values.
+	 *
+	 * @return bool
+	 */
+	private function wellFormed(array $schema, string $field, mixed $set, mixed $when): bool {
+		if (count($schema) !== 2 || $schema[0] === '' || $schema[1] === '' || $field === '') {
+			return false;
+		}
+
+		return is_array($set) === true && $set !== [] && is_array($when) === true;
+	}//end wellFormed()
 
 	/**
 	 * Each related id the written objects name, with how many name it.

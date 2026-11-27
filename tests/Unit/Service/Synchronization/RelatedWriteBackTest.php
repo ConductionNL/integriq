@@ -40,8 +40,18 @@ final class RelatedWriteBackTest extends TestCase {
 	 */
 	private array $saves = [];
 
+	/**
+	 * Whether every save fails.
+	 *
+	 * @var boolean
+	 */
 	private bool $saveFails = false;
 
+	/**
+	 * Payslips of two handoffs and one of none, and the two handoffs.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		$this->store = [
 			'humaniq/Payslip/slip-1' => ['employeeId' => 'e1', 'payrollHandoffId' => 'handoff-1'],
@@ -87,7 +97,7 @@ final class RelatedWriteBackTest extends TestCase {
 	 * @return RelatedWriteBack
 	 */
 	private function writeBack(?LoggerInterface $logger = null): RelatedWriteBack {
-		$objects = $this->createMock(OrObjectService::class);
+		$objects = $this->createMock(originalClassName: OrObjectService::class);
 		$objects->method('find')->willReturnCallback(
 			function ($id, ?ObjectFindOptions $options = null): ?ObjectEntity {
 				$key = $options->register . '/' . $options->schema . '/' . $id;
@@ -118,7 +128,7 @@ final class RelatedWriteBackTest extends TestCase {
 			}
 		);
 
-		return new RelatedWriteBack(objectService: $objects, logger: ($logger ?? $this->createMock(LoggerInterface::class)));
+		return new RelatedWriteBack(objectService: $objects, logger: ($logger ?? $this->createMock(originalClassName: LoggerInterface::class)));
 	}//end writeBack()
 
 	/**
@@ -129,15 +139,18 @@ final class RelatedWriteBackTest extends TestCase {
 	public function testTheHandoffIsMovedOnceAfterTheRun(): void {
 		$moved = $this->writeBack()->apply(synchronization: $this->pull(), targetIds: ['slip-1', 'slip-2', 'slip-1']);
 
-		$this->assertSame(1, $moved);
-		$this->assertCount(1, $this->saves);
+		$this->assertSame(expected: 1, actual: $moved);
+		$this->assertCount(expectedCount: 1, haystack: $this->saves);
 		$save = $this->saves[0];
-		$this->assertSame(['humaniq', 'PayrollHandoff', 'handoff-1'], [$save['register'], $save['schema'], $save['uuid']]);
-		$this->assertSame('ontvangen', $save['object']['status']);
-		$this->assertSame('2026-09', $save['object']['period'], 'The handoff keeps its own fields.');
-		$this->assertSame(2, $save['object']['payslipsReceived']);
-		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $save['object']['receivedAt']);
-		$this->assertFalse($save['silent'], 'A normal save, so the app listening for the transition runs its intake check.');
+		$this->assertSame(expected: ['humaniq', 'PayrollHandoff', 'handoff-1'], actual: [$save['register'], $save['schema'], $save['uuid']]);
+		$this->assertSame(expected: 'ontvangen', actual: $save['object']['status']);
+		$this->assertSame(expected: '2026-09', actual: $save['object']['period'], message: 'The handoff keeps its own fields.');
+		$this->assertSame(expected: 2, actual: $save['object']['payslipsReceived']);
+		$this->assertMatchesRegularExpression(
+			pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
+			string: $save['object']['receivedAt']
+		);
+		$this->assertFalse(condition: $save['silent'], message: 'A normal save, so the app listening for the transition runs its intake check.');
 	}//end testTheHandoffIsMovedOnceAfterTheRun()
 
 	/**
@@ -148,8 +161,8 @@ final class RelatedWriteBackTest extends TestCase {
 	public function testOnlyAnObjectInTheDeclaredStateIsMoved(): void {
 		$moved = $this->writeBack()->apply(synchronization: $this->pull(), targetIds: ['slip-3', 'slip-4']);
 
-		$this->assertSame(0, $moved);
-		$this->assertSame([], $this->saves);
+		$this->assertSame(expected: 0, actual: $moved);
+		$this->assertSame(expected: [], actual: $this->saves);
 	}//end testOnlyAnObjectInTheDeclaredStateIsMoved()
 
 	/**
@@ -160,7 +173,7 @@ final class RelatedWriteBackTest extends TestCase {
 	public function testAMissingRelatedObjectMovesNothing(): void {
 		$this->store['humaniq/Payslip/slip-1']['payrollHandoffId'] = 'gone';
 
-		$this->assertSame(0, $this->writeBack()->apply(synchronization: $this->pull(), targetIds: ['slip-1']));
+		$this->assertSame(expected: 0, actual: $this->writeBack()->apply(synchronization: $this->pull(), targetIds: ['slip-1']));
 	}//end testAMissingRelatedObjectMovesNothing()
 
 	/**
@@ -170,10 +183,10 @@ final class RelatedWriteBackTest extends TestCase {
 	 */
 	public function testAFailedSaveIsLoggedNotThrown(): void {
 		$this->saveFails = true;
-		$logger = $this->createMock(LoggerInterface::class);
-		$logger->expects($this->once())->method('warning')->with($this->stringContains('database gone'));
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with($this->stringContains(string: 'database gone'));
 
-		$this->assertSame(0, $this->writeBack(logger: $logger)->apply(synchronization: $this->pull(), targetIds: ['slip-1']));
+		$this->assertSame(expected: 0, actual: $this->writeBack(logger: $logger)->apply(synchronization: $this->pull(), targetIds: ['slip-1']));
 	}//end testAFailedSaveIsLoggedNotThrown()
 
 	/**
@@ -182,13 +195,16 @@ final class RelatedWriteBackTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMalformedDeclarationIsIgnored(): void {
-		$logger = $this->createMock(LoggerInterface::class);
-		$logger->expects($this->exactly(2))->method('warning')->with($this->stringContains('relatedWriteBack needs'));
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$logger->expects($this->exactly(count: 2))->method('warning')->with($this->stringContains(string: 'relatedWriteBack needs'));
 		$writeBack = $this->writeBack(logger: $logger);
 
-		$this->assertSame(0, $writeBack->apply(synchronization: $this->pull(override: ['set' => []]), targetIds: ['slip-1']));
-		$this->assertSame(0, $writeBack->apply(synchronization: $this->pull(override: ['schema' => 'PayrollHandoff']), targetIds: ['slip-1']));
-		$this->assertSame([], $this->saves);
+		$this->assertSame(expected: 0, actual: $writeBack->apply(synchronization: $this->pull(override: ['set' => []]), targetIds: ['slip-1']));
+		$this->assertSame(
+			expected: 0,
+			actual: $writeBack->apply(synchronization: $this->pull(override: ['schema' => 'PayrollHandoff']), targetIds: ['slip-1'])
+		);
+		$this->assertSame(expected: [], actual: $this->saves);
 	}//end testAMalformedDeclarationIsIgnored()
 
 	/**
@@ -201,9 +217,12 @@ final class RelatedWriteBackTest extends TestCase {
 		$api = $this->pull();
 		$api['targetType'] = 'api';
 
-		$this->assertSame(0, $writeBack->apply(synchronization: ['targetType' => 'register/schema', 'targetId' => 'humaniq/Payslip'], targetIds: ['slip-1']));
-		$this->assertSame(0, $writeBack->apply(synchronization: $this->pull(), targetIds: []));
-		$this->assertSame(0, $writeBack->apply(synchronization: $api, targetIds: ['slip-1']));
-		$this->assertSame([], $this->saves);
+		$this->assertSame(
+			expected: 0,
+			actual: $writeBack->apply(synchronization: ['targetType' => 'register/schema', 'targetId' => 'humaniq/Payslip'], targetIds: ['slip-1'])
+		);
+		$this->assertSame(expected: 0, actual: $writeBack->apply(synchronization: $this->pull(), targetIds: []));
+		$this->assertSame(expected: 0, actual: $writeBack->apply(synchronization: $api, targetIds: ['slip-1']));
+		$this->assertSame(expected: [], actual: $this->saves);
 	}//end testNothingHappensWithoutADeclarationOrWrites()
 }//end class

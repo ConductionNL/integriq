@@ -36,7 +36,7 @@ final class RemoteFileTargetTest extends TestCase {
 	 * @return RemoteFileTarget
 	 */
 	private function target(): RemoteFileTarget {
-		$client = $this->createMock(RemoteFileClient::class);
+		$client = $this->createMock(originalClassName: RemoteFileClient::class);
 		$client->method('deliver')->willReturnCallback(
 			function (array $source, string $path, $stream): void {
 				$this->delivered[] = ['path' => $path, 'text' => (string)stream_get_contents($stream)];
@@ -64,9 +64,12 @@ final class RemoteFileTargetTest extends TestCase {
 			]
 		);
 
-		$this->assertSame(['path' => 'incoming/812345671L01-2026-09.csv', 'fileName' => '812345671L01-2026-09.csv', 'rows' => 2], $result);
-		$this->assertSame('incoming/812345671L01-2026-09.csv', $this->delivered[0]['path']);
-		$this->assertSame("medewerker,veld,nieuw\ne1,hoursPerWeek,36\ne2,iban,NL20INGB0001234567\n", $this->delivered[0]['text']);
+		$this->assertSame(
+			expected: ['path' => 'incoming/812345671L01-2026-09.csv', 'fileName' => '812345671L01-2026-09.csv', 'rows' => 2],
+			actual: $result
+		);
+		$this->assertSame(expected: 'incoming/812345671L01-2026-09.csv', actual: $this->delivered[0]['path']);
+		$this->assertSame(expected: "medewerker,veld,nieuw\ne1,hoursPerWeek,36\ne2,iban,NL20INGB0001234567\n", actual: $this->delivered[0]['text']);
 	}//end testTheRowsAreDeliveredAsOneCsvFile()
 
 	/**
@@ -81,8 +84,8 @@ final class RemoteFileTargetTest extends TestCase {
 			targetObject: ['name' => 'out.csv', 'lines' => [['a' => 1, 'b' => 2]]]
 		);
 
-		$this->assertSame('out.csv', $this->delivered[0]['path']);
-		$this->assertSame("a;b\n1;2\n", $this->delivered[0]['text']);
+		$this->assertSame(expected: 'out.csv', actual: $this->delivered[0]['path']);
+		$this->assertSame(expected: "a;b\n1;2\n", actual: $this->delivered[0]['text']);
 	}//end testTheFieldsAndDelimiterAreConfigurable()
 
 	/**
@@ -94,13 +97,13 @@ final class RemoteFileTargetTest extends TestCase {
 		foreach (['', '../etc/passwd', 'sub/file.csv', '..'] as $name) {
 			try {
 				$this->target()->deliver(source: [], targetConfig: [], targetObject: ['fileName' => $name, 'rows' => []]);
-				$this->fail('A file name "' . $name . '" must be refused.');
+				$this->fail(message: 'A file name "' . $name . '" must be refused.');
 			} catch (RemoteFileException $e) {
-				$this->assertStringContainsString('file', $e->getMessage());
+				$this->assertStringContainsString(needle: 'file', haystack: $e->getMessage());
 			}
 		}
 
-		$this->assertSame([], $this->delivered);
+		$this->assertSame(expected: [], actual: $this->delivered);
 	}//end testAFileNameWithAPathIsRefused()
 
 	/**
@@ -109,7 +112,7 @@ final class RemoteFileTargetTest extends TestCase {
 	 * @return void
 	 */
 	public function testRowsThatAreNotAListAreRefused(): void {
-		$this->expectException(RemoteFileException::class);
+		$this->expectException(exception: RemoteFileException::class);
 		$this->target()->deliver(source: [], targetConfig: [], targetObject: ['fileName' => 'a.csv', 'rows' => ['x' => ['a' => 1]]]);
 	}//end testRowsThatAreNotAListAreRefused()
 }//end class

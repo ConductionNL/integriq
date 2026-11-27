@@ -59,6 +59,11 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 	 */
 	private array $delivered = [];
 
+	/**
+	 * What the remote file client throws, if anything.
+	 *
+	 * @var \Throwable|null
+	 */
 	private ?\Throwable $deliveryFailure = null;
 
 	/**
@@ -68,6 +73,11 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 	 */
 	private array $rows = [];
 
+	/**
+	 * The SFTP drop, the Loket.nl source and a ready handoff.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		$this->store = [
 			'drop-uuid' => ['type' => 'sftp', 'location' => 'sftp.bureau.example.nl', 'name' => 'Payroll bureau SFTP drop'],
@@ -82,7 +92,7 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 	 * @return SynchronizationService
 	 */
 	private function service(): SynchronizationService {
-		$or = $this->createMock(ORObjectService::class);
+		$or = $this->createMock(originalClassName: ORObjectService::class);
 		$or->method('find')->willReturnCallback(
 			function ($id) {
 				$entity = new ObjectEntity();
@@ -110,13 +120,16 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 		);
 		$or->method('saveObject')->willReturnCallback(
 			function (...$legacyArgs) {
-				[$object, $register, $schema, $uuid, $_rbac, $_multitenancy, $silent] = LegacyObjectArgs::positional(method: 'saveObject', args: $legacyArgs);
+				[$object, $register, $schema, $uuid, $_rbac, $_multitenancy, $silent] = LegacyObjectArgs::positional(
+					method: 'saveObject',
+					args: $legacyArgs
+				);
 				$this->saves[] = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid, 'silent' => $silent];
 				return new ObjectEntity();
 			}
 		);
 
-		$calls = $this->createMock(CallService::class);
+		$calls = $this->createMock(originalClassName: CallService::class);
 		$calls->method('applyConfigDot')->willReturnArgument(0);
 		$calls->method('call')->willReturnCallback(
 			function () {
@@ -126,7 +139,7 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 			}
 		);
 
-		$client = $this->createMock(RemoteFileClient::class);
+		$client = $this->createMock(originalClassName: RemoteFileClient::class);
 		$client->method('deliver')->willReturnCallback(
 			function (array $source, string $path, $stream): void {
 				if ($this->deliveryFailure !== null) {
@@ -136,24 +149,32 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 				$this->delivered[] = ['path' => $path, 'text' => (string)stream_get_contents($stream), 'host' => (string)($source['location'] ?? '')];
 			}
 		);
-		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(static fn (string $id) => ($id === RemoteFileClient::class ? $client : null));
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($client): ?RemoteFileClient {
+				if ($id === RemoteFileClient::class) {
+					return $client;
+				}
 
-		$appConfig = $this->createMock(IAppConfig::class);
+				return null;
+			}
+		);
+
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
-		$sourceMapping = $this->createMock(ObjectService::class);
+		$sourceMapping = $this->createMock(originalClassName: ObjectService::class);
 		$sourceMapping->method('getOpenRegisters')->willReturn($or);
 
 		return new SynchronizationService(
-			$calls,
-			$this->createMock(MappingService::class),
-			$container,
-			$or,
-			$sourceMapping,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SynchronizationLogService::class),
-			$appConfig,
-			$this->createMock(SynchronizationApprovalGate::class),
+			callService: $calls,
+			mappingService: $this->createMock(originalClassName: MappingService::class),
+			containerInterface: $container,
+			orObjectService: $or,
+			objectService: $sourceMapping,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			synchronizationLogService: $this->createMock(originalClassName: SynchronizationLogService::class),
+			appConfig: $appConfig,
+			approvalGate: $this->createMock(originalClassName: SynchronizationApprovalGate::class),
 		);
 	}//end service()
 
@@ -201,19 +222,23 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 			synchronization: $this->sftpPush()
 		);
 
-		$this->assertSame('incoming/812345671L01-2026-09.csv', $contract['targetId']);
-		$this->assertSame('incoming/812345671L01-2026-09.csv', $this->delivered[0]['path']);
-		$this->assertSame('sftp.bureau.example.nl', $this->delivered[0]['host'], 'The target source is the one the synchronization names.');
-		$this->assertSame("medewerker,veld,nieuw\ne1,hoursPerWeek,36\n", $this->delivered[0]['text']);
+		$this->assertSame(expected: 'incoming/812345671L01-2026-09.csv', actual: $contract['targetId']);
+		$this->assertSame(expected: 'incoming/812345671L01-2026-09.csv', actual: $this->delivered[0]['path']);
+		$this->assertSame(
+			expected: 'sftp.bureau.example.nl',
+			actual: $this->delivered[0]['host'],
+			message: 'The target source is the one the synchronization names.'
+		);
+		$this->assertSame(expected: "medewerker,veld,nieuw\ne1,hoursPerWeek,36\n", actual: $this->delivered[0]['text']);
 
-		$this->assertCount(1, $this->saves);
+		$this->assertCount(expectedCount: 1, haystack: $this->saves);
 		$save = $this->saves[0];
-		$this->assertSame(['humaniq', 'PayrollHandoff', 'handoff-1'], [$save['register'], $save['schema'], $save['uuid']]);
-		$this->assertTrue($save['silent']);
-		$this->assertSame('verzonden', $save['object']['status']);
-		$this->assertSame('incoming/812345671L01-2026-09.csv', $save['object']['deliveryReference']);
-		$this->assertMatchesRegularExpression(self::ISO, $save['object']['deliveredAt']);
-		$this->assertSame('adm-1', $save['object']['administrationId'], 'The handoff keeps its own fields.');
+		$this->assertSame(expected: ['humaniq', 'PayrollHandoff', 'handoff-1'], actual: [$save['register'], $save['schema'], $save['uuid']]);
+		$this->assertTrue(condition: $save['silent']);
+		$this->assertSame(expected: 'verzonden', actual: $save['object']['status']);
+		$this->assertSame(expected: 'incoming/812345671L01-2026-09.csv', actual: $save['object']['deliveryReference']);
+		$this->assertMatchesRegularExpression(pattern: self::ISO, string: $save['object']['deliveredAt']);
+		$this->assertSame(expected: 'adm-1', actual: $save['object']['administrationId'], message: 'The handoff keeps its own fields.');
 	}//end testAnSftpTargetDeliversTheFileAndWritesTheOutcomeBack()
 
 	/**
@@ -229,7 +254,7 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 			synchronization: $this->sftpPush(targetType: 'ftps')
 		);
 
-		$this->assertCount(1, $this->delivered);
+		$this->assertCount(expectedCount: 1, haystack: $this->delivered);
 	}//end testAnFtpsTargetTakesTheSamePath()
 
 	/**
@@ -238,7 +263,7 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusedDeliveryWritesTheFailureAndFailsThePush(): void {
-		$this->deliveryFailure = new RemoteFileException('The SFTP server refused the write.');
+		$this->deliveryFailure = new RemoteFileException(message: 'The SFTP server refused the write.');
 		$file = $this->mappedFile();
 
 		try {
@@ -247,14 +272,14 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 				targetObject: $file,
 				synchronization: $this->sftpPush()
 			);
-			$this->fail('The refusal must reach the caller.');
+			$this->fail(message: 'The refusal must reach the caller.');
 		} catch (RemoteFileException $e) {
-			$this->assertSame('The SFTP server refused the write.', $e->getMessage());
+			$this->assertSame(expected: 'The SFTP server refused the write.', actual: $e->getMessage());
 		}
 
-		$this->assertCount(1, $this->saves);
-		$this->assertSame('The SFTP server refused the write.', $this->saves[0]['object']['deliveryError']);
-		$this->assertSame('klaargezet', $this->saves[0]['object']['status']);
+		$this->assertCount(expectedCount: 1, haystack: $this->saves);
+		$this->assertSame(expected: 'The SFTP server refused the write.', actual: $this->saves[0]['object']['deliveryError']);
+		$this->assertSame(expected: 'klaargezet', actual: $this->saves[0]['object']['status']);
 	}//end testARefusedDeliveryWritesTheFailureAndFailsThePush()
 
 	/**
@@ -271,9 +296,9 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 			synchronization: $this->sftpPush()
 		);
 
-		$this->assertSame('incoming/a.csv', $contract['targetId']);
-		$this->assertSame([], $this->delivered);
-		$this->assertSame([], $this->saves);
+		$this->assertSame(expected: 'incoming/a.csv', actual: $contract['targetId']);
+		$this->assertSame(expected: [], actual: $this->delivered);
+		$this->assertSame(expected: [], actual: $this->saves);
 	}//end testADeleteRemovesNothingOnTheServer()
 
 	/**
@@ -301,9 +326,9 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 			synchronization: $push
 		);
 
-		$this->assertCount(1, $this->saves);
-		$this->assertSame('LKT-MUT-2026-0915', $this->saves[0]['object']['deliveryReference']);
-		$this->assertMatchesRegularExpression(self::ISO, $this->saves[0]['object']['deliveredAt']);
+		$this->assertCount(expectedCount: 1, haystack: $this->saves);
+		$this->assertSame(expected: 'LKT-MUT-2026-0915', actual: $this->saves[0]['object']['deliveryReference']);
+		$this->assertMatchesRegularExpression(pattern: self::ISO, string: $this->saves[0]['object']['deliveredAt']);
 	}//end testAnApiPushStampsTheDeliveryTime()
 
 	/**
@@ -333,8 +358,8 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 			['id' => 'handoff-1'] + $this->store['handoff-1']
 		);
 
-		$this->assertSame(['salary'], array_column($embedded['mutations'], 'kind'));
-		$this->assertSame('812345671L01', $embedded['administration']['loonheffingennummer']);
+		$this->assertSame(expected: ['salary'], actual: array_column($embedded['mutations'], 'kind'));
+		$this->assertSame(expected: '812345671L01', actual: $embedded['administration']['loonheffingennummer']);
 	}//end testThePushEmbedsTheDeclaredRelations()
 
 	/**
@@ -368,17 +393,17 @@ final class SynchronizationPayrollExchangeTest extends TestCase {
 		$apply = new ReflectionMethod(SynchronizationService::class, 'applyRelatedWriteBack');
 		$apply->invoke($this->service(), $run);
 
-		$this->assertSame(['moved' => 1], $run->result['relatedWriteBack']);
-		$this->assertCount(1, $this->saves);
-		$this->assertSame('ontvangen', $this->saves[0]['object']['status']);
-		$this->assertFalse((bool)$this->saves[0]['silent']);
+		$this->assertSame(expected: ['moved' => 1], actual: $run->result['relatedWriteBack']);
+		$this->assertCount(expectedCount: 1, haystack: $this->saves);
+		$this->assertSame(expected: 'ontvangen', actual: $this->saves[0]['object']['status']);
+		$this->assertFalse(condition: (bool)$this->saves[0]['silent']);
 
 		$this->saves = [];
 		$test = clone $run;
 		$test->isTest = true;
 		$test->result = [];
 		$apply->invoke($this->service(), $test);
-		$this->assertSame([], $this->saves, 'A test run writes nothing, so it moves nothing.');
-		$this->assertArrayNotHasKey('relatedWriteBack', $test->result);
+		$this->assertSame(expected: [], actual: $this->saves, message: 'A test run writes nothing, so it moves nothing.');
+		$this->assertArrayNotHasKey(key: 'relatedWriteBack', array: $test->result);
 	}//end testAPullRunMovesTheRelatedObjectOnce()
 }//end class
