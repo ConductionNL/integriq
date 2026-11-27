@@ -1,6 +1,50 @@
 {
-  "$comment": "ADR-037 register fragment (api-product-gateway). Declares the api_product and api_product_subscription schemas backing the API Products gateway layer (a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier), and deep-merges the fields needed to support them onto three pre-existing schemas: call_log (product/endpoint/responseTime — general-but-scoped inbound observability, endpoint-runtime REQ-EP-009) and approval_request (subscriptionId — the subscription-approval creation seam, api-product-gateway REQ-APG-004 / design.md Decision 4). See openspec/changes/archive/2026-07-15-api-product-gateway/design.md#database-changes and specs/api-product-gateway/spec.md.",
+  "$comment": "components.objects carries the consumers and endpoints the api_product seeds reference by @ref (copied from integriq_seed_data.json, which nothing imports), so those references resolve on a fresh install. ADR-037 register fragment (api-product-gateway). Declares the api_product and api_product_subscription schemas backing the API Products gateway layer (a named, versioned bundle of existing Endpoints a Consumer can subscribe to at a rate-limit tier), and deep-merges the fields needed to support them onto three pre-existing schemas: call_log (product/endpoint/responseTime — general-but-scoped inbound observability, endpoint-runtime REQ-EP-009) and approval_request (subscriptionId — the subscription-approval creation seam, api-product-gateway REQ-APG-004 / design.md Decision 4). See openspec/changes/archive/2026-07-15-api-product-gateway/design.md#database-changes and specs/api-product-gateway/spec.md.",
   "components": {
+    "objects": [
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "consumer",
+          "slug": "partner-portal"
+        },
+        "name": "Partner Portal",
+        "description": "Example consumer for an external partner integration. Replace identifiers before enabling."
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "consumer",
+          "slug": "example-developer-app"
+        },
+        "name": "Example developer application",
+        "description": "Application the seeded developer account developer1 created in the developer portal.",
+        "userId": "developer1",
+        "ownerKind": "developer"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "ping"
+        },
+        "name": "Ping",
+        "description": "Sample health endpoint that returns a fixed payload.",
+        "endpoint": "/api/ping",
+        "method": "GET"
+      },
+      {
+        "@self": {
+          "register": "integriq",
+          "schema": "endpoint",
+          "slug": "version"
+        },
+        "name": "Version",
+        "description": "Sample endpoint returning the running app version.",
+        "endpoint": "/api/version",
+        "method": "GET"
+      }
+    ],
     "registers": {
       "integriq": {
         "schemas": ["api_product", "api_product_subscription"]
@@ -52,9 +96,9 @@
           },
           "status": {
             "type": "string",
-            "enum": ["active", "deprecated", "retired"],
+            "enum": ["draft", "active", "deprecated", "retired"],
             "default": "active",
-            "description": "When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594). When 'retired', the product's endpoints answer 410 Gone to subscribers. Deprecating, moving the sunset date or retiring writes one product_change_notice per active subscription (access-developer-portal-and-subscriptions D5)",
+            "description": "'draft' is not yet published: a product integriq generates (such as an app's data feeds) starts there, and an administrator makes it active once its API design check has no open error (REQ-ADRC-003). When 'deprecated' (with sunsetDate set), every response served through this product's endpoints carries Deprecation/Sunset headers (RFC 8594). When 'retired', the product's endpoints answer 410 Gone to subscribers. Deprecating, moving the sunset date or retiring writes one product_change_notice per active subscription (access-developer-portal-and-subscriptions D5)",
             "title": "Status"
           },
           "sunsetDate": {
@@ -182,7 +226,7 @@
             "version": "2.0.0",
             "visibility": "public",
             "status": "active",
-            "endpoints": ["@ref:endpoint:echo"],
+            "endpoints": ["@ref:endpoint:ping"],
             "channels": [
               {
                 "slug": "publications",
@@ -429,7 +473,7 @@
           "update": ["admin"],
           "delete": ["admin"]
         },
-        "description": "One row per active subscription, written when an administrator deprecates a product, sets or moves its sunset date, publishes a new version or retires it, and fourteen days before a subscription ends. The row is the record of who was told what and when; its created trigger sends the Nextcloud notification and the mail. See openspec/changes/access-developer-portal-and-subscriptions/design.md D5 and D6.",
+        "description": "One row per active subscription, written when an administrator deprecates a product, sets or moves its sunset date, publishes a new version or retires it, and fourteen days before a subscription ends. The row is the record of who was told what and when; its created trigger sends the Nextcloud notification and the mail. See openspec/changes/archive/2026-11-25-access-developer-portal-and-subscriptions/design.md D5 and D6.",
         "required": ["product", "recipientUserId", "kind"],
         "type": "object",
         "properties": {

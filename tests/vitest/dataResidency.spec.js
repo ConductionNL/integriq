@@ -57,10 +57,19 @@ vi.mock('@nextcloud/vue', async () => {
 		})
 	return {
 		NcButton: stub('NcButton', ['variant', 'disabled']),
-		NcCheckboxRadioSwitch: stub('NcCheckboxRadioSwitch', ['modelValue', 'type', 'disabled']),
+		NcCheckboxRadioSwitch: stub('NcCheckboxRadioSwitch', [
+			'modelValue',
+			'type',
+			'disabled',
+		]),
 		NcDialog: stub('NcDialog', ['open', 'name', 'size']),
 		NcNoteCard: stub('NcNoteCard', ['type']),
-		NcSelect: stub('NcSelect', ['modelValue', 'options', 'inputLabel', 'clearable']),
+		NcSelect: stub('NcSelect', [
+			'modelValue',
+			'options',
+			'inputLabel',
+			'clearable',
+		]),
 		NcTextField: stub('NcTextField', ['modelValue', 'label', 'helperText']),
 	}
 })
@@ -81,7 +90,10 @@ vi.mock('@conduction/nextcloud-vue', async () => {
 								h(
 									'td',
 									{ 'data-col': col.key },
-									this.$slots['column-' + col.key]?.({ row, value: row[col.key] }) ?? String(row[col.key] ?? ''),
+									this.$slots['column-' + col.key]?.({
+										row,
+										value: row[col.key],
+									}) ?? String(row[col.key] ?? ''),
 								),
 							),
 							h('td', {}, this.$slots['row-actions']?.({ row })),
@@ -97,25 +109,56 @@ enableAutoUnmount(afterEach)
 
 const LIST = {
 	destinations: [
-		{ host: 'zaken.example.nl', name: 'Zaken', sourceId: 'src-1', country: 'NL', basis: 'set-by-admin', evidence: 'DPA 2025', zone: 'eu' },
-		{ host: 'api.example.no', name: 'Kart', sourceId: 'src-2', country: 'NO', basis: 'declared-by-app', evidence: '', zone: 'eea' },
-		{ host: 'stray.example.com', name: '', sourceId: null, country: null, basis: '', evidence: '', zone: 'unknown' },
+		{
+			host: 'zaken.example.nl',
+			name: 'Zaken',
+			sourceId: 'src-1',
+			country: 'NL',
+			basis: 'set-by-admin',
+			evidence: 'DPA 2025',
+			zone: 'eu',
+		},
+		{
+			host: 'api.example.no',
+			name: 'Kart',
+			sourceId: 'src-2',
+			country: 'NO',
+			basis: 'declared-by-app',
+			evidence: '',
+			zone: 'eea',
+		},
+		{
+			host: 'stray.example.com',
+			name: '',
+			sourceId: null,
+			country: null,
+			basis: '',
+			evidence: '',
+			zone: 'unknown',
+		},
 	],
 	verdict: 'not-proven',
 	counts: { eu: 1, eea: 1, outside: 0, unknown: 1 },
 	euOnly: false,
 }
 
-const t = (app, text, vars = {}) => text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m))
+function t(app, text, vars = {}) {
+	return text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m))
+}
 
 describe('residency text', () => {
 	it('offers exactly the codes the backend accepts', () => {
-		const php = readFileSync(resolve(__dirname, '../../lib/Service/Residency/ResidencyZones.php'), 'utf8')
+		const php = readFileSync(
+			resolve(__dirname, '../../lib/Service/Residency/ResidencyZones.php'),
+			'utf8',
+		)
 		const block = php.match(/ISO_3166_1 = \[([\s\S]*?)\];/)[1]
 		expect(COUNTRY_CODES).toEqual(block.match(/[A-Z]{2}/g))
 		const options = countryOptions('en')
 		expect(options).toHaveLength(COUNTRY_CODES.length)
-		expect(options.find((option) => option.id === 'NL').label).toBe('Netherlands (NL)')
+		expect(options.find((option) => option.id === 'NL').label).toBe(
+			'Netherlands (NL)',
+		)
 	})
 
 	it('names each zone and both verdicts', () => {
@@ -129,7 +172,17 @@ describe('residency text', () => {
 
 	it('names the blocking destinations, preferring the backend sentence', () => {
 		expect(blockingText({ error: 'Stays off: Kart' }, t)).toBe('Stays off: Kart')
-		expect(blockingText({ blocking: [{ name: 'Kart', host: 'api.example.no' }, { name: '', host: 'stray.example.com' }] }, t)).toBe(
+		expect(
+			blockingText(
+				{
+					blocking: [
+						{ name: 'Kart', host: 'api.example.no' },
+						{ name: '', host: 'stray.example.com' },
+					],
+				},
+				t,
+			),
+		).toBe(
 			'EU only mode stays off. These destinations are not shown to be in the EU: Kart, stray.example.com',
 		)
 	})
@@ -141,24 +194,40 @@ describe('SourceResidencyDialog', () => {
 	})
 
 	async function opened(source) {
-		const wrapper = mount(SourceResidencyDialog, { props: { open: false, source } })
+		const wrapper = mount(SourceResidencyDialog, {
+			props: { open: false, source },
+		})
 		await wrapper.setProps({ open: true })
 		return wrapper
 	}
 
 	it('starts from the current residency and saves country and evidence', async () => {
-		put.mockResolvedValue({ data: { residency: { country: 'DE', basis: 'set-by-admin' } } })
-		const wrapper = await opened({ id: 'src-2', name: 'Kart', residency: { country: 'NO', basis: 'declared-by-app', evidence: 'Site' } })
+		put.mockResolvedValue({
+			data: { residency: { country: 'DE', basis: 'set-by-admin' } },
+		})
+		const wrapper = await opened({
+			id: 'src-2',
+			name: 'Kart',
+			residency: { country: 'NO', basis: 'declared-by-app', evidence: 'Site' },
+		})
 		expect(wrapper.vm.country.id).toBe('NO')
 		expect(wrapper.vm.evidence).toBe('Site')
-		expect(wrapper.find('[data-testid="source-residency-current"]').text()).toContain('declared by the app')
+		expect(
+			wrapper.find('[data-testid="source-residency-current"]').text(),
+		).toContain('declared by the app')
 
 		wrapper.vm.country = wrapper.vm.options.find((option) => option.id === 'DE')
 		wrapper.vm.evidence = '  DPA 2026  '
 		await wrapper.vm.save()
 
-		expect(put).toHaveBeenCalledWith('/apps/integriq/api/sources/src-2/residency', { country: 'DE', evidence: 'DPA 2026' })
-		expect(wrapper.emitted('saved')[0][0].residency).toEqual({ country: 'DE', basis: 'set-by-admin' })
+		expect(put).toHaveBeenCalledWith(
+			'/apps/integriq/api/sources/src-2/residency',
+			{ country: 'DE', evidence: 'DPA 2026' },
+		)
+		expect(wrapper.emitted('saved')[0][0].residency).toEqual({
+			country: 'DE',
+			basis: 'set-by-admin',
+		})
 		expect(wrapper.emitted('close')).toHaveLength(1)
 	})
 
@@ -171,11 +240,22 @@ describe('SourceResidencyDialog', () => {
 	})
 
 	it('shows the refusal and stays open', async () => {
-		put.mockRejectedValue({ response: { status: 403, data: { error: 'Only an administrator can manage data residency.' } } })
-		const wrapper = await opened({ id: 'src-1', name: 'Zaken', residency: { country: 'NL', basis: 'set-by-admin', evidence: 'DPA' } })
+		put.mockRejectedValue({
+			response: {
+				status: 403,
+				data: { error: 'Only an administrator can manage data residency.' },
+			},
+		})
+		const wrapper = await opened({
+			id: 'src-1',
+			name: 'Zaken',
+			residency: { country: 'NL', basis: 'set-by-admin', evidence: 'DPA' },
+		})
 		await wrapper.vm.save()
 		await flushPromises()
-		expect(wrapper.find('[data-testid="source-residency-error"]').text()).toBe('Only an administrator can manage data residency.')
+		expect(wrapper.find('[data-testid="source-residency-error"]').text()).toBe(
+			'Only an administrator can manage data residency.',
+		)
 		expect(wrapper.emitted('close')).toBeUndefined()
 	})
 })
@@ -200,21 +280,39 @@ describe('EgressDestinationsPage', () => {
 		const stray = wrapper.find('tr[data-host="stray.example.com"]')
 		expect(stray.find('[data-col="name"]').text()).toBe('No source')
 		expect(stray.find('[data-col="zone"]').text()).toBe('Unknown')
-		expect(stray.find('[data-testid="egress-set-residency"]').exists()).toBe(false)
-		expect(wrapper.find('tr[data-host="api.example.no"] [data-col="zone"]').text()).toBe('EEA, outside the EU')
-		expect(wrapper.find('tr[data-host="api.example.no"] [data-col="basis"]').text()).toBe('Declared by the app')
-		expect(wrapper.find('[data-testid="egress-verdict"]').text()).toContain('Not proven')
-		expect(wrapper.find('[data-testid="egress-counts"]').text()).toContain('Unknown: 1')
-		expect(wrapper.find('[data-testid="egress-not-covered"]').text()).toContain('other apps make without integriq are not covered')
+		expect(stray.find('[data-testid="egress-set-residency"]').exists()).toBe(
+			false,
+		)
+		expect(
+			wrapper.find('tr[data-host="api.example.no"] [data-col="zone"]').text(),
+		).toBe('EEA, outside the EU')
+		expect(
+			wrapper.find('tr[data-host="api.example.no"] [data-col="basis"]').text(),
+		).toBe('Declared by the app')
+		expect(wrapper.find('[data-testid="egress-verdict"]').text()).toContain(
+			'Not proven',
+		)
+		expect(wrapper.find('[data-testid="egress-counts"]').text()).toContain(
+			'Unknown: 1',
+		)
+		expect(wrapper.find('[data-testid="egress-not-covered"]').text()).toContain(
+			'other apps make without integriq are not covered',
+		)
 	})
 
 	it('keeps EU only mode off when the backend refuses, naming the blockers', async () => {
-		put.mockRejectedValue({ response: { status: 409, data: { blocking: [LIST.destinations[2]] } } })
+		put.mockRejectedValue({
+			response: { status: 409, data: { blocking: [LIST.destinations[2]] } },
+		})
 		const wrapper = await mounted()
 		await wrapper.vm.setEuOnly(true)
-		expect(put).toHaveBeenCalledWith('/apps/integriq/api/egress/eu-only', { enabled: true })
+		expect(put).toHaveBeenCalledWith('/apps/integriq/api/egress/eu-only', {
+			enabled: true,
+		})
 		expect(wrapper.vm.euOnly).toBe(false)
-		expect(wrapper.find('[data-testid="egress-error"]').text()).toContain('stray.example.com')
+		expect(wrapper.find('[data-testid="egress-error"]').text()).toContain(
+			'stray.example.com',
+		)
 	})
 
 	it('switches EU only mode on when the backend allows it', async () => {
@@ -229,9 +327,17 @@ describe('EgressDestinationsPage', () => {
 		const opened = vi.fn()
 		modalBus.on(EVENT_OPEN_SOURCE_RESIDENCY, opened)
 		const wrapper = await mounted()
-		await wrapper.find('tr[data-host="api.example.no"] [data-testid="egress-set-residency"]').trigger('click')
+		await wrapper
+			.find(
+				'tr[data-host="api.example.no"] [data-testid="egress-set-residency"]',
+			)
+			.trigger('click')
 		expect(opened).toHaveBeenCalledWith({
-			source: { id: 'src-2', name: 'Kart', residency: { country: 'NO', basis: 'declared-by-app', evidence: '' } },
+			source: {
+				id: 'src-2',
+				name: 'Kart',
+				residency: { country: 'NO', basis: 'declared-by-app', evidence: '' },
+			},
 		})
 		modalBus.off(EVENT_OPEN_SOURCE_RESIDENCY, opened)
 

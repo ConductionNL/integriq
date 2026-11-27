@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Integriq\Outbound\RecipientResolver
  * @uses   \OCA\Integriq\Outbound\RecipientSelectionRefusedException
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
  */
 class RecipientResolverTest extends TestCase {
 

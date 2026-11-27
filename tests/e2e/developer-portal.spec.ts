@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md
+ * Spec coverage: openspec/specs/api-product-gateway/spec.md
  *
  * The developer portal as its users meet it. Two developers and one account
  * outside the developer group are made through the provisioning API by the
@@ -23,6 +23,7 @@
 
 import type { APIRequestContext, Browser, BrowserContext } from '@playwright/test'
 
+import { seedFirstVisitOverlaysSeen } from '@conduction/nextcloud-vue/testing/playwright'
 import { expect, test } from '@playwright/test'
 import { APP_BASE } from './spec-coverage/_helpers.ts'
 import { BASE_URL } from './support/baseUrl.ts'
@@ -84,6 +85,9 @@ async function asAccount(playwright: any, userId: string): Promise<APIRequestCon
  */
 async function browserAs(browser: Browser, userId: string): Promise<BrowserContext> {
 	const context = await browser.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } })
+	// A fresh account meets the first-visit support dialog, which covers the
+	// portal; global-setup seeds the "seen" flag for the admin only.
+	await seedFirstVisitOverlaysSeen(context, 'integriq')
 	const page = await context.newPage()
 	await page.goto('/index.php/login')
 	await page.locator('input[name="user"]').fill(userId)

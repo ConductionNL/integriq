@@ -83,7 +83,13 @@
 import axios from '@nextcloud/axios'
 import { getLanguage, translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcDialog, NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcDialog,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import { rowId } from '../handlers/rowId.js'
 import closableDialog from '../mixins/closableDialog.js'
 import { countryOptions } from '../views/EgressDestinations/residency.js'
@@ -140,22 +146,37 @@ export default {
 		/** @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001 */
 		current() {
 			const residency = this.source?.residency
-			return residency && typeof residency.country === 'string' && residency.country !== '' ? residency : null
+			return residency
+				&& typeof residency.country === 'string'
+				&& residency.country !== ''
+				? residency
+				: null
 		},
 
 		/** @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001 */
 		currentText() {
 			if (this.current?.basis === 'set-by-admin') {
-				return t('integriq', 'Now {country}, set by an administrator.', { country: this.current.country })
+				return t('integriq', 'Now {country}, set by an administrator.', {
+					country: this.current.country,
+				})
 			}
-			return t('integriq', 'Now {country}, declared by the app that uses this source. Saving here replaces it, and the app can no longer change it.', {
-				country: this.current?.country ?? '',
-			})
+			return t(
+				'integriq',
+				'Now {country}, declared by the app that uses this source. Saving here replaces it, and the app can no longer change it.',
+				{
+					country: this.current?.country ?? '',
+				},
+			)
 		},
 
 		/** @spec openspec/changes/connections-declare-data-residency/specs/data-residency/spec.md#requirement-a-source-records-its-residency-with-a-basis-and-evidence-req-res-001 */
 		canSave() {
-			return !this.busy && this.country !== null && this.evidence.trim() !== '' && rowId(this.source) !== null
+			return (
+				!this.busy
+				&& this.country !== null
+				&& this.evidence.trim() !== ''
+				&& rowId(this.source) !== null
+			)
 		},
 	},
 
@@ -201,14 +222,22 @@ export default {
 			this.error = ''
 			try {
 				const id = encodeURIComponent(String(rowId(this.source)))
-				const response = await axios.put(generateUrl(`/apps/integriq/api/sources/${id}/residency`), {
-					country: this.country.id,
-					evidence: this.evidence.trim(),
+				const response = await axios.put(
+					generateUrl(`/apps/integriq/api/sources/${id}/residency`),
+					{
+						country: this.country.id,
+						evidence: this.evidence.trim(),
+					},
+				)
+				this.$emit('saved', {
+					source: this.source,
+					residency: response.data?.residency ?? null,
 				})
-				this.$emit('saved', { source: this.source, residency: response.data?.residency ?? null })
 				this.close()
 			} catch (exception) {
-				this.error = exception?.response?.data?.error || t('integriq', 'The residency could not be saved.')
+				this.error =
+					exception?.response?.data?.error
+					|| t('integriq', 'The residency could not be saved.')
 			} finally {
 				this.busy = false
 			}

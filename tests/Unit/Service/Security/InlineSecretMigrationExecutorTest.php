@@ -38,6 +38,8 @@ use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlanner;
 use OCA\Integriq\Service\Security\InlineSecretMigrationPlannerInterface;
 use OCA\Integriq\Tests\Helpers\MigrationSimulatingObjectService;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -318,6 +320,73 @@ class TestableInlineSecretMigrationExecutor extends InlineSecretMigrationExecuto
 
 		return $this->brokerInstance;
 	}//end resolveBroker()
+}//end class
+
+/**
+ * A broker with only OpenRegister main's value-object mint (no positional mint()).
+ *
+ * OpenRegister main removed CredentialBrokerService::mint() on 10 Nov 2026; the
+ * migration must mint through mintCredential(CredentialMint, CredentialMintOptions).
+ */
+class ValueMintBroker {
+
+	/**
+	 * Recorded mintCredential() invocations, flattened.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public array $mintCalls = [];
+
+	/**
+	 * uuid => secret, so verify returns the minted secret.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $vault = [];
+
+	/**
+	 * Mint through the value-object API.
+	 *
+	 * @param CredentialMint        $mint    The credential.
+	 * @param CredentialMintOptions $options The options and secret.
+	 *
+	 * @return ObjectEntity The minted credential entity.
+	 */
+	public function mintCredential(CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+		$this->mintCalls[] = [
+			'name' => $mint->name,
+			'provider' => $mint->provider,
+			'owner' => $mint->owner,
+			'allowedApps' => $options->allowedApps,
+			'scope' => $options->scope,
+			'organisation' => $options->organisation,
+		];
+		$uuid = 'vcred-' . count($this->mintCalls);
+		$this->vault[$uuid] = (string)$options->secret();
+
+		$entity = new ObjectEntity();
+		$entity->setUuid($uuid);
+		return $entity;
+	}//end mintCredential()
+
+	/**
+	 * Resolve an inject-only credential's secret (4-arg or#450 shape).
+	 *
+	 * @param string      $credentialId         The credential UUID.
+	 * @param string      $appId                The calling app id.
+	 * @param string|null $actingUserId         Sessionless acting user.
+	 * @param string|null $actingOrganisationId Sessionless acting organisation.
+	 *
+	 * @return string|null The resolved secret, or null.
+	 */
+	public function resolveInjectable(
+		string $credentialId,
+		string $appId,
+		?string $actingUserId = null,
+		?string $actingOrganisationId = null,
+	): ?string {
+		return ($this->vault[$credentialId] ?? null);
+	}//end resolveInjectable()
 }//end class
 
 /**
@@ -681,6 +750,36 @@ class InlineSecretMigrationExecutorTest extends TestCase {
 			'The executor must read the entity with _render:false (secrets intact) in _rbac:false system context.'
 		);
 	}//end testExecutorReadsRawWithRenderFalse()
+
+	/**
+	 * OpenRegister main (no positional mint()): the migration mints through
+	 * mintCredential() at organisation scope with openconnector allowed, then
+	 * verifies and nulls exactly as before.
+	 *
+	 * @spec openspec/specs/source-credential-custody/spec.md#requirement-inline-secret-migration-executor
+	 *
+	 * @return void
+	 */
+	public function testMintsThroughTheValueObjectApiOnOpenRegisterMain(): void {
+		$this->objectService->seed('src-1', ['name' => 'API source', 'apikey' => self::SECRET], self::OWNER, self::ORG);
+		$broker = new ValueMintBroker();
+		$this->executor->brokerInstance = $broker;
+
+		$result = $this->executor->migrateAll();
+
+		$this->assertSame(expected: 1, actual: $result['migrated']);
+		$this->assertSame(expected: 0, actual: $result['failed']);
+		$this->assertCount(expectedCount: 1, haystack: $broker->mintCalls);
+		$this->assertSame(expected: 'organisation', actual: $broker->mintCalls[0]['scope']);
+		$this->assertSame(expected: self::ORG, actual: $broker->mintCalls[0]['organisation']);
+		$this->assertSame(expected: ['openconnector'], actual: $broker->mintCalls[0]['allowedApps']);
+		$this->assertSame(expected: self::OWNER, actual: $broker->mintCalls[0]['owner']);
+		$this->assertNull(actual: $this->rawField(uuid: 'src-1', field: 'apikey'));
+		$this->assertSame(
+			expected: ['credentialRef' => ['credentialId' => 'vcred-1']],
+			actual: $this->rawRef(uuid: 'src-1', field: 'apikey')
+		);
+	}//end testMintsThroughTheValueObjectApiOnOpenRegisterMain()
 
 	/**
 	 * FAIL CLOSED on an OpenRegister too old to MINT: nothing is rewritten.

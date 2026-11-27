@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use RuntimeException;
  * @covers \OCA\Integriq\EventListener\DeliveryRequestedListener
  * @covers \OCA\Integriq\Event\DeliveryRequestedEvent
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
  */
 class EventServiceRecipientSelectionTest extends TestCase {
 
@@ -84,7 +84,7 @@ class EventServiceRecipientSelectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
 	 */
 	public function testTheRecordKeepsThreePartsAndThePayloadTheResolvedList(): void {
 		$event = $this->request(payload: ['caseId' => 'case-1']);
@@ -112,7 +112,7 @@ class EventServiceRecipientSelectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
 	 */
 	public function testASuppressionWithoutAReasonWritesNothing(): void {
 		$decision = $this->decision();
@@ -160,7 +160,7 @@ class EventServiceRecipientSelectionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
 	 */
 	public function testTheMessageRecordCarriesTheDecision(): void {
 		$recorder = $this->getMockBuilder(MessageRecorder::class)->disableOriginalConstructor()->getMock();

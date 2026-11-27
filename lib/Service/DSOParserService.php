@@ -434,7 +434,7 @@ class DSOParserService implements PortalRequestParserInterface {
 	 *
 	 * @return array<int, array{name: string, url: string}> The parsed references.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/tasks.md#task-1.2
+	 * @spec openspec/changes/archive/2026-11-26-dso-attachments-on-the-request/tasks.md#task-1.2
 	 */
 	private function parseAttachments(mixed $attachments): array {
 		if (is_array($attachments) === false) {

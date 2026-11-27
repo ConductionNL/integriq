@@ -32,6 +32,8 @@ namespace OCA\Integriq\Service\OAuth;
 use OCA\Integriq\Service\OrganisationBridgeService;
 use OCA\Integriq\Service\Security\InlineSecretMigrationExecutor;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use Psr\Container\ContainerInterface;
@@ -146,14 +148,16 @@ class IssuerKeyService implements IssuerKeyServiceInterface {
 
 		$details   = openssl_pkey_get_details($pair);
 		$kid       = bin2hex(random_bytes(8));
-		$credential = $this->broker()->mint(
-			'Integriq token issuer key ' . $kid,
-			self::BROKER_PROVIDER,
-			$owner,
-			[InlineSecretMigrationExecutor::APP_ID],
-			$privatePem,
-			InlineSecretMigrationExecutor::SCOPE_ORGANISATION,
-			$organisation
+		// OpenRegister main mints through mintCredential() with value objects;
+		// the eight-argument mint() is gone (fatal "undefined method", a 500).
+		$credential = $this->broker()->mintCredential(
+			new CredentialMint(name: 'Integriq token issuer key ' . $kid, provider: self::BROKER_PROVIDER, owner: $owner),
+			new CredentialMintOptions(
+				allowedApps: [InlineSecretMigrationExecutor::APP_ID],
+				secret: $privatePem,
+				scope: InlineSecretMigrationExecutor::SCOPE_ORGANISATION,
+				organisation: $organisation
+			)
 		);
 		$ref = '';
 		if ($credential instanceof ObjectEntity) {

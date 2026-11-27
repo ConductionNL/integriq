@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * Tests the acts on the log: read, retry, forward, ask.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-failed-send-is-retried-from-the-screen-and-the-retry-is-recorded-req-ocl-003
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-a-failed-send-is-retried-from-the-screen-and-the-retry-is-recorded-req-ocl-003
  */
 class OutboundLogServicesTest extends TestCase {
 

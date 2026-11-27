@@ -77,9 +77,9 @@ test.describe('nextcloud-event-triggers: family grant and self-service subscribe
 	test.describe.configure({ mode: 'serial' })
 
 	test.beforeAll(async ({ request }) => {
-		await request.post('/index.php/ocs/v2.php/cloud/groups?format=json', { failOnStatusCode: false, headers: OCS, form: { groupid: GROUP } })
-		await request.post('/index.php/ocs/v2.php/cloud/users?format=json', { failOnStatusCode: false, headers: OCS, form: { userid: MEMBER, password: PASSWORD } })
-		await request.post(`/index.php/ocs/v2.php/cloud/users/${MEMBER}/groups?format=json`, { failOnStatusCode: false, headers: OCS, form: { groupid: GROUP } })
+		await request.post('/ocs/v2.php/cloud/groups?format=json', { failOnStatusCode: false, headers: OCS, form: { groupid: GROUP } })
+		await request.post('/ocs/v2.php/cloud/users?format=json', { failOnStatusCode: false, headers: OCS, form: { userid: MEMBER, password: PASSWORD } })
+		await request.post(`/ocs/v2.php/cloud/users/${MEMBER}/groups?format=json`, { failOnStatusCode: false, headers: OCS, form: { groupid: GROUP } })
 
 		const current = await request.get(MATRIX, { failOnStatusCode: false, headers: await withRequestToken(request) })
 		expect(current.status(), 'an administrator reads the action matrix').toBe(200)
@@ -178,22 +178,23 @@ test.describe('nextcloud-event-triggers: the action-type picker', () => {
 		await expect(kind).toBeVisible({ timeout: 10_000 })
 		for (const name of ['Synchronization', 'Job', 'Flow']) {
 			await kind.click()
-			await page.getByRole('option', { name: new RegExp(`^${name}$`) }).first().click()
+			// NcSelect may split a label into two spans, which breaks an exact accessible name.
+			await page.getByRole('option').filter({ hasText: new RegExp(`^\\s*${name}\\s*$`) }).first().click()
 			await expect(dialog.locator('#cn-subscription-action-target'), `${name} shows its target picker`).toBeVisible()
 		}
 
 		await kind.click()
-		await page.getByRole('option', { name: /^Webhook$/ }).first().click()
+		await page.getByRole('option').filter({ hasText: /^\s*Webhook\s*$/ }).first().click()
 		await expect(dialog.locator('#cn-subscription-action-target'), 'a webhook posts to the sink and needs no target').toHaveCount(0)
 	})
 
 	// @e2e nextcloud-event-triggers::choosing-flow-persists-the-target
 	// Task 3's second criterion for every kind: the saved subscription carries the chosen action.
 	const kinds: Array<[string, Record<string, string>]> = [
-		['synchronization', { kind: 'synchronization', synchronizationId: 'e2e-sync-0000-0000-0000-000000000001' }],
-		['job', { kind: 'job', jobId: 'e2e-job-0000-0000-0000-000000000001' }],
+		['synchronization', { kind: 'synchronization', synchronizationId: '00000000-0000-4000-8000-00000000e2e1' }],
+		['job', { kind: 'job', jobId: '00000000-0000-4000-8000-00000000e2e2' }],
 		['webhook', { kind: 'webhook' }],
-		['flow', { kind: 'flow', flowId: 'e2e-flow-0000-0000-0000-000000000001' }],
+		['flow', { kind: 'flow', flowId: '00000000-0000-4000-8000-00000000e2e3' }],
 	]
 	for (const [name, action] of kinds) {
 		test(`a subscription saved with a ${name} action carries it`, async ({ request }) => {

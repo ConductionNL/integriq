@@ -39,8 +39,10 @@ object, portaliq, wave 2. The channel half waits on nothing.
 
 ### Task 6: Coordination, docs and the hand-offs
 - **files**: `docs/`, Dutch and English strings, the catalogue entries, this change's row in `competitor-parity-2026-09`
-- [ ] Tell dossiq that `case.intakeChannel` can be written from the channel that delivered the message, beside the form's own channel from buildiq's `forms-per-case-type`
+- [x] Tell dossiq that `case.intakeChannel` can be written from the channel that delivered the message, beside the form's own channel from buildiq's `forms-per-case-type`
+  > 2026-11-26: handed over in the lanes' handoff log (builders-idle.md, live-integriq-1, "FOR b-dossiq"), naming the integriq side it builds on.
 - [ ] Ask the portaliq lane, cluster 51, for the form definition a submission mapping names, and agree what happens when it is missing
+  > 2026-11-26: asked (COORDINATOR-QUEUE.md, live-integriq-1) with three options and a recommendation: hold the submission unmapped and visible as 'form definition missing', write no case. Open until the portaliq lane answers.
 - [x] Record C-intake-4 as belonging to the Nextcloud platform programme under D9, and C-intake-12 and C-tasks-and-phases-31 as a product decision with documented passers only under D21
 - [x] Test (`tests/e2e/intake-channels.spec.ts`, `openspec validate intake-channels-beyond-mail --type change --strict`)
 

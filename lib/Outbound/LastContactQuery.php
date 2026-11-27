@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\ObjectService as ORObjectService;
 /**
  * Answers when a recipient was last told anything about a subject.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-log-answers-when-a-recipient-was-last-told-anything-req-ocl-006
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-the-log-answers-when-a-recipient-was-last-told-anything-req-ocl-006
  */
 class LastContactQuery implements LastContactQueryInterface {
 

@@ -251,7 +251,34 @@ class FeedDeclarationServiceTest extends TestCase {
 		$this->assertSame('shillinq data feeds', $product['name']);
 		$this->assertSame('shillinq-data-feeds', $product['productSlug']);
 		$this->assertEqualsCanonicalizing(array_column($endpoints, 'uuid'), $product['endpoints']);
+		$this->assertSame(expected: 'draft', actual: $product['status']);
 	}//end testFourDatasetsBecomeFourEndpointsAndOneProduct()
+
+	/**
+	 * A generated product starts as draft, so the API design check does not refuse
+	 * the sync; a product an administrator made active stays active on a re-sync.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-an-app-declares-its-data-feeds-in-a-file-req-ddf-001
+	 */
+	public function testANewProductIsDraftAndAnActivatedProductStaysActive(): void {
+		$declaration = self::fixture();
+		$this->shillinq(declaration: $declaration);
+		$this->service()->sync();
+
+		$uuid = array_key_first($this->store['api_product']);
+		$this->assertSame(expected: FeedDeclarationService::NEW_PRODUCT_STATUS, actual: $this->store['api_product'][$uuid]['status']);
+
+		$this->store['api_product'][$uuid]['status'] = 'active';
+		array_pop($declaration['feeds']);
+		file_put_contents($this->tmp . '/lib/Settings/feeds.json', (string)json_encode($declaration));
+		$this->service()->sync();
+
+		$this->assertCount(expectedCount: 1, haystack: $this->store['api_product']);
+		$this->assertSame(expected: 'active', actual: $this->store['api_product'][$uuid]['status']);
+		$this->assertCount(expectedCount: 3, haystack: $this->store['api_product'][$uuid]['endpoints']);
+	}//end testANewProductIsDraftAndAnActivatedProductStaysActive()
 
 	/**
 	 * shillinq's own file, written as datasets bound by administration, is

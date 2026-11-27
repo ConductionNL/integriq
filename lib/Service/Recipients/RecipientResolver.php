@@ -39,7 +39,7 @@
  *
  * @link https://Integriq.app
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ class RecipientResolver {
 	 *
 	 * @return string[] The refusals, empty when the request may be sent.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+	 * @spec openspec/specs/message-recipient-selection/spec.md
 	 */
 	public function refusals(array $standing, array $suppressions): array {
 		$byAddress = $this->recipientsByAddress(standing: $standing);
@@ -200,7 +200,7 @@ class RecipientResolver {
 	 *
 	 * @throws RecipientRefusedException When the request may not be sent.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+	 * @spec openspec/specs/message-recipient-selection/spec.md
 	 */
 	public function resolve(
 		array $standing,
@@ -341,7 +341,7 @@ class RecipientResolver {
 	 *
 	 * @throws RecipientRefusedException When the request would be refused.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+	 * @spec openspec/specs/message-recipient-selection/spec.md
 	 */
 	public function preview(
 		array $standing,

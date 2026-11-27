@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests who is refused, which is what this controller mostly does.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
  */
 class OutboundLogControllerTest extends TestCase {
 

@@ -12750,8 +12750,8 @@
         },
         "publishedUuid": "3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c01",
         "name": "melding openbare ruimte",
-        "register": "meldingen",
-        "schema": "melding",
+        "objectsRegister": "meldingen",
+        "objectsSchema": "melding",
         "versions": ["1"]
       },
       {
@@ -12762,8 +12762,8 @@
         },
         "publishedUuid": "8a2d4c61-1e3f-4a5b-8c7d-9e0f1a2b3c02",
         "name": "boom",
-        "register": "openbare-ruimte",
-        "schema": "boom",
+        "objectsRegister": "openbare-ruimte",
+        "objectsSchema": "boom",
         "versions": []
       },
       {
@@ -12774,8 +12774,8 @@
         },
         "publishedUuid": "c5e7f901-2a3b-4c4d-9e5f-6a7b8c9d0e03",
         "name": "parkeervergunning",
-        "register": "vergunningen",
-        "schema": "parkeervergunning",
+        "objectsRegister": "vergunningen",
+        "objectsSchema": "parkeervergunning",
         "versions": ["1", "2"]
       },
       {
@@ -13218,8 +13218,8 @@
           "slug": "catalogi-binding-catalogi-binding-1-1"
         },
         "publishedUuid": "00000000-0000-4000-8000-000000000000",
-        "register": "Voorbeeld Register 1",
-        "schema": "Voorbeeld Schema 1",
+        "typesRegister": "Voorbeeld Register 1",
+        "typesSchema": "Voorbeeld Schema 1",
         "domein": "Voorb",
         "rsin": "012345678",
         "naam": "Voorbeeld Naam 1",
@@ -13241,8 +13241,8 @@
           "slug": "catalogi-binding-catalogi-binding-2-2"
         },
         "publishedUuid": "00000000-0000-4000-8000-000000000001",
-        "register": "Voorbeeld Register 2",
-        "schema": "Voorbeeld Schema 2",
+        "typesRegister": "Voorbeeld Register 2",
+        "typesSchema": "Voorbeeld Schema 2",
         "domein": "Voorb",
         "rsin": "123456789",
         "naam": "Voorbeeld Naam 2",
@@ -13264,8 +13264,8 @@
           "slug": "catalogi-binding-catalogi-binding-3-3"
         },
         "publishedUuid": "00000000-0000-4000-8000-000000000002",
-        "register": "Voorbeeld Register 3",
-        "schema": "Voorbeeld Schema 3",
+        "typesRegister": "Voorbeeld Register 3",
+        "typesSchema": "Voorbeeld Schema 3",
         "domein": "Voorb",
         "rsin": "234567890",
         "naam": "Voorbeeld Naam 3",

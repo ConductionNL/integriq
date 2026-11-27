@@ -171,6 +171,45 @@ final class FilePickupTest extends TestCase {
 	}//end testTheMorningBatchIsStoredArchivedAndNotFetchedAgain()
 
 	/**
+	 * A store that closes the stream, as Nextcloud's Folder::newFile() does, still
+	 * gets the file archived and remembered, and the run does not throw.
+	 *
+	 * @return void
+	 */
+	public function testAStoreThatClosesTheStreamStillArchivesTheFile(): void {
+		$this->client->method('listFiles')->willReturn($this->batch());
+		$events = &$this->events;
+		$closing = new class($events) implements PickedFileStore {
+			/**
+			 * @param list<string> $events The shared event log.
+			 */
+			public function __construct(private array &$events) {
+			}
+
+			/**
+			 * Record the store and close the stream, as a store that consumes it does.
+			 *
+			 * @param string   $folder The target folder.
+			 * @param string   $name   The file name.
+			 * @param resource $stream The file contents.
+			 *
+			 * @return string The stored path.
+			 */
+			public function store(string $folder, string $name, $stream): string {
+				$this->events[] = 'store ' . $name;
+				fclose($stream);
+				return '/admin/files/' . $folder . '/' . $name;
+			}
+		};
+		$config = ['path' => '', 'pattern' => 'besluiten-*.csv', 'after' => 'move', 'archivePath' => 'processed', 'filesFolder' => 'Partner/besluiten'];
+
+		$result = $this->pickup()->run(source: [], config: $config, store: $closing, seen: [], now: self::NOW);
+
+		$this->assertSame(expected: ['moved', 'moved', 'moved'], actual: array_column($result['picked'], 'after'));
+		$this->assertCount(expectedCount: 3, haystack: $result['seen']);
+	}//end testAStoreThatClosesTheStreamStillArchivesTheFile()
+
+	/**
 	 * A failed local write leaves the remote file where it was, and the next run tries it again.
 	 *
 	 * @return void

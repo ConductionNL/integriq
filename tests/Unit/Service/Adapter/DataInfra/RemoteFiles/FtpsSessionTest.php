@@ -43,11 +43,11 @@ final class FtpsSessionTest extends TestCase {
 			. "garbage-without-space\r\n";
 
 		$this->assertSame(
-			[
+			expected: [
 				['name' => 'besluiten 2026-11-14.csv', 'size' => 1204, 'modifiedAt' => gmmktime(7, 25, 0, 11, 14, 2026), 'isDirectory' => false],
 				['name' => 'processed', 'size' => null, 'modifiedAt' => gmmktime(0, 0, 0, 11, 1, 2026), 'isDirectory' => true],
 			],
-			FtpsSession::parseMlsd(answer: $answer)
+			actual: FtpsSession::parseMlsd(answer: $answer)
 		);
 	}//end testAnMlsdAnswerIsReadIntoEntries()
 }//end class

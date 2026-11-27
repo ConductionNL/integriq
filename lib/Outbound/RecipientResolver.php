@@ -29,7 +29,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\IL10N;
 /**
  * Turns a per-message recipient decision into its three recorded parts and the resolved list.
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
  */
 class RecipientResolver {
 
@@ -93,7 +93,7 @@ class RecipientResolver {
 	 *
 	 * @param IL10N $l10n Translates the refusals.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
@@ -108,7 +108,7 @@ class RecipientResolver {
 	 *
 	 * @return bool True when it carries standing, added or suppressed recipients.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function isDecision(array $decision): bool {
 		foreach (['standing', 'added', 'suppressed'] as $part) {
@@ -135,8 +135,8 @@ class RecipientResolver {
 	 *
 	 * @throws RecipientSelectionRefusedException When the decision cannot be honoured; nothing is to be sent.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-an-addition-applies-to-one-message-only-req-mrs-002
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-list-of-a-message-is-a-recorded-decision-req-mrs-001
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-an-addition-applies-to-one-message-only-req-mrs-002
 	 */
 	public function resolve(array $decision, string $userId = ''): array {
 		$standing = $this->standing(rows: $this->rows(value: ($decision['standing'] ?? [])));
@@ -187,7 +187,7 @@ class RecipientResolver {
 	 *
 	 * @throws RecipientSelectionRefusedException When a required marker names nothing.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-required-recipient-cannot-be-suppressed-req-mrs-004
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-required-recipient-cannot-be-suppressed-req-mrs-004
 	 */
 	private function standing(array $rows): array {
 		$standing = [];
@@ -229,7 +229,7 @@ class RecipientResolver {
 	 *
 	 * @throws RecipientSelectionRefusedException When an addition has no address.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-an-addition-applies-to-one-message-only-req-mrs-002
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-an-addition-applies-to-one-message-only-req-mrs-002
 	 */
 	private function added(array $rows): array {
 		$added = [];
@@ -266,8 +266,8 @@ class RecipientResolver {
 	 *
 	 * @throws RecipientSelectionRefusedException On an unknown, a required or a reasonless suppression.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-required-recipient-cannot-be-suppressed-req-mrs-004
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-required-recipient-cannot-be-suppressed-req-mrs-004
 	 */
 	private function suppressed(array $rows, array $standing, string $userId): array {
 		$byKey = [];

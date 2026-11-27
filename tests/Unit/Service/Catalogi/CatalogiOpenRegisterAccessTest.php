@@ -85,6 +85,20 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	public ?array $concepts = null;
 
 	/**
+	 * The one scheme URI the concept register resolves, or null for any.
+	 *
+	 * @var string|null
+	 */
+	public ?string $schemeUri = null;
+
+	/**
+	 * The scheme URIs asked for, in order.
+	 *
+	 * @var list<string>
+	 */
+	public array $schemesAsked = [];
+
+	/**
 	 * {@inheritDoc}
 	 *
 	 * @return void
@@ -99,8 +113,8 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 					$this->test->calls[] = ['findAll', $config, $rbac, $multi];
 					return ['results' => ($this->test->objects[$config['filters']['schema']] ?? [])];
 				}
-				public function saveObject(array $object, ?array $extend = [], mixed $register = null, mixed $schema = null): void {
-					$this->test->calls[] = ['saveObject', $object, $register, $schema];
+				public function saveObject(array $object, ?object $options = null): void {
+					$this->test->calls[] = ['saveObject', $object, $options?->target->register, $options?->target->schema];
 				}
 			},
 			CatalogiOpenRegisterAccess::SCHEMA_MAPPER => new class($test) {
@@ -115,9 +129,16 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 			CatalogiOpenRegisterAccess::CONCEPTS => new class($test) {
 				public function __construct(private readonly CatalogiOpenRegisterAccessTest $test) {}
 				public function scheme(string $uri): ?array {
-					return ($this->test->concepts === null) ? null : ['uri' => $uri];
+					$this->test->schemesAsked[] = $uri;
+					if ($this->test->concepts === null || ($this->test->schemeUri !== null && $uri !== $this->test->schemeUri)) {
+						return null;
+					}
+					return ['uri' => $uri];
 				}
 				public function conceptsOf(string $uri): array {
+					if ($this->test->schemeUri !== null && $uri !== $this->test->schemeUri) {
+						return [];
+					}
 					return (array)$this->test->concepts;
 				}
 			},
@@ -145,7 +166,7 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	public function testTheBindingResolvesOnlyWithItsSchema(): void {
 		self::assertNull($this->access()->binding(), 'no binding');
 
-		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'register' => 'documents', 'schema' => 'documentType']];
+		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'typesRegister' => 'documents', 'typesSchema' => 'documentType']];
 		$binding = $this->access()->binding();
 		self::assertSame('cat-1', $binding?->uuid);
 		self::assertSame(['findAll', ['filters' => ['register' => 'integriq', 'schema' => 'catalogi_binding'], 'limit' => 5000], false, false], $this->calls[1]);
@@ -160,7 +181,7 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	 * @return void
 	 */
 	public function testTypesAreReadAndCreatedInTheBoundSchema(): void {
-		$binding = CatalogiBinding::fromObject(row: ['publishedUuid' => 'cat-1', 'register' => 'documents', 'schema' => 'documentType']);
+		$binding = CatalogiBinding::fromObject(row: ['publishedUuid' => 'cat-1', 'typesRegister' => 'documents', 'typesSchema' => 'documentType']);
 		$this->objects['documentType'] = [['id' => 'type-1', 'name' => 'Besluit']];
 
 		self::assertSame([['id' => 'type-1', 'name' => 'Besluit']], $this->access()->types(binding: $binding));
@@ -187,6 +208,53 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 	}//end testWooCategoriesComeFromTheConceptRegister()
 
 	/**
+	 * The categories are found under the scheme OpenRegister seeds
+	 * (`tooi/def/thes/kern/`), and under the TOOI set URI when only that resolves.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-a-woo-starter-set-gives-one-type-per-woo-information-category-req-zcs-003
+	 */
+	public function testWooCategoriesAreReadFromTheSeededScheme(): void {
+		$this->concepts = ['https://identifier.overheid.nl/tooi/def/thes/kern/c_1' => ['prefLabel' => 'besluiten']];
+		$expected = [['uri' => 'https://identifier.overheid.nl/tooi/def/thes/kern/c_1', 'label' => 'besluiten']];
+
+		$this->schemeUri = 'https://identifier.overheid.nl/tooi/def/thes/kern/';
+		self::assertSame(expected: $expected, actual: $this->access()->wooCategories());
+
+		$this->schemeUri = CatalogiOpenRegisterAccess::TOOI_SCHEME;
+		$this->schemesAsked = [];
+		self::assertSame(expected: $expected, actual: $this->access()->wooCategories());
+		self::assertSame(expected: CatalogiOpenRegisterAccess::TOOI_SCHEMES, actual: $this->schemesAsked);
+	}//end testWooCategoriesAreReadFromTheSeededScheme()
+
+	/**
+	 * A language-map prefLabel, as OpenRegister's concept register stores it,
+	 * gives the Dutch label, then English, then any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-a-woo-starter-set-gives-one-type-per-woo-information-category-req-zcs-003
+	 */
+	public function testALanguageMapLabelReadsDutchFirst(): void {
+		$this->concepts = [
+			'https://x/c_1' => ['prefLabel' => ['en' => 'Laws', 'nl' => 'Wetten']],
+			'https://x/c_2' => ['prefLabel' => ['en' => 'Covenants']],
+			'https://x/c_3' => ['prefLabel' => ['de' => 'Berichte']],
+			'https://x/c_4' => ['prefLabel' => ['nl' => ' ', 'fr' => [], 'de' => '']],
+		];
+
+		self::assertSame(
+			expected: [
+				['uri' => 'https://x/c_1', 'label' => 'Wetten'],
+				['uri' => 'https://x/c_2', 'label' => 'Covenants'],
+				['uri' => 'https://x/c_3', 'label' => 'Berichte'],
+			],
+			actual: $this->access()->wooCategories()
+		);
+	}//end testALanguageMapLabelReadsDutchFirst()
+
+	/**
 	 * Every facade service is registered and built with its seams on the access.
 	 *
 	 * @return void
@@ -202,7 +270,7 @@ class CatalogiOpenRegisterAccessTest extends TestCase {
 		CatalogiWiring::register(context: $context);
 		self::assertSame([CatalogiGate::class, InformatieobjecttypeEndpointHandler::class, WooStarterSet::class], array_keys($factories));
 
-		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'register' => 'documents', 'schema' => 'documentType']];
+		$this->objects['catalogi_binding'] = [['publishedUuid' => 'cat-1', 'typesRegister' => 'documents', 'typesSchema' => 'documentType']];
 		$this->objects['documentType'] = [['id' => 'own', 'category' => 'besluiten']];
 		$this->concepts = ['https://x/c_1' => ['prefLabel' => 'besluiten'], 'https://x/c_2' => ['prefLabel' => 'convenanten']];
 		$access = $this->access();

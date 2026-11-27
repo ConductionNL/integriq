@@ -21,7 +21,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\Integriq\Service\Security\PersonalDataFields;
 /**
  * Removes credential material from a body before it is stored.
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
  */
 class BodyRedactor {
 

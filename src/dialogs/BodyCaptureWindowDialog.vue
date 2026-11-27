@@ -123,12 +123,15 @@ export default {
 			this.error = ''
 			try {
 				const res = await axios.post(
-					generateUrl(`/apps/integriq/api/sources/${this.sourceId}/body-capture`),
+					generateUrl(
+						`/apps/integriq/api/sources/${this.sourceId}/body-capture`,
+					),
 					{ hours: Number(this.hours), reason: this.reason.trim() },
 				)
 				this.$emit('opened', res.data)
 			} catch (err) {
-				this.error = err?.response?.data?.error
+				this.error =
+					err?.response?.data?.error
 					|| t('integriq', 'The investigation window could not be opened.')
 			} finally {
 				this.busy = false

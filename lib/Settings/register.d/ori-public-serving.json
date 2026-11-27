@@ -212,29 +212,19 @@
         },
         "name": "ORI persons item",
         "slug": "ori-item-persons",
-        "description": "Projects one decidiq person object onto the ORI Person fields, the way decidiq's OriSerializer does.",
+        "description": "Projects one decidiq person object onto the ORI Person fields decidiq's OriPersonPublicationRule publishes: id, name, image and biography. Never the email: this is an anonymous endpoint, and OriController does not publish it.",
         "mapping": {
           "@context": "https://argu.co/ns/core",
           "@type": "Person",
           "id": "{{ uuid|default(id) }}",
-          "name": "{{ title|default(name) }}",
-          "start_date": "scheduledDate",
-          "end_date": "endDate",
-          "location": "location",
-          "status": "lifecycle",
-          "classification": "{{ meetingType|default(bodyType)|default(motionType) }}",
-          "text": "text",
-          "email": "email"
+          "name": "{{ name|default(title) }}",
+          "image": "image",
+          "biography": "biography"
         },
         "cast": {
           "name": "unsetIfValue==",
-          "start_date": "unsetIfValue==scheduledDate",
-          "end_date": "unsetIfValue==endDate",
-          "location": "unsetIfValue==location",
-          "status": "unsetIfValue==lifecycle",
-          "classification": "unsetIfValue==",
-          "text": "unsetIfValue==text",
-          "email": "unsetIfValue==email"
+          "image": "unsetIfValue==image",
+          "biography": "unsetIfValue==biography"
         },
         "passThrough": false
       },

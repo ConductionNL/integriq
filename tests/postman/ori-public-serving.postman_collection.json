@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Integriq — ORI public serving parity (ori-public-serving)",
-    "description": "ori-public-serving task 2, the Newman half: TC-8, TC-9, TC-10 and TC-11 of openspec/changes/ori-public-serving/test-plan.md. Anonymous single-object reads on the ori-parity/v1 endpoints answer 404, never 403, for an amendment asked for as a motion (the endpoint's fixedFilters, REQ-EP-010), a draft meeting, and a publication dated in the future; each is compared with decidiq's own OriController, and the amendment is served under /amendments, so the guard is shown to be selective. TC-10 is the Risk 3 check: if the endpoint answers 200 where OriController answers 404, the publish-window gate needs its own filter. The objects are staged in decidiq's register through OpenRegister's objects API under this run's marker and deleted again. Precondition: decidiq is installed; without its register the first request stops the run. Run with tests/postman/integriq.postman_environment.json.",
+    "description": "ori-public-serving: TC-1, TC-2, TC-3 (all eleven resources diffed against OriController), TC-4, TC-5, TC-7, TC-8 to TC-11 and TC-13 of openspec/changes/ori-public-serving/test-plan.md. Anonymous single-object reads on the ori-parity/v1 endpoints answer 404, never 403, for an amendment asked for as a motion (the endpoint's fixedFilters, REQ-EP-010), a draft meeting, and a publication dated in the future; each is compared with decidiq's own OriController, and the amendment is served under /amendments, so the guard is shown to be selective. TC-10 is the Risk 3 check: if the endpoint answers 200 where OriController answers 404, the publish-window gate needs its own filter. The objects are staged in decidiq's register through OpenRegister's objects API under this run's marker and deleted again. Precondition: decidiq is installed; without its register the first request stops the run. Run with tests/postman/integriq.postman_environment.json. Not here: TC-6 (needs a governance body with an email), TC-12 (121 requests in a minute, a performance run) and TC-14 (the RIS poll job, a regression outside this API).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -124,7 +124,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-8 control: the same amendment is served under /amendments (the guard is selective, not vacuous)",
@@ -155,7 +158,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-8 parity: OriController hides it under /motions too",
@@ -186,7 +192,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "Stage: a draft meeting",
@@ -257,7 +266,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-9 parity: OriController hides the draft meeting too",
@@ -288,7 +300,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "Stage: a publication dated in the future",
@@ -359,7 +374,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "TC-10: the endpoint hides the future publication as OriController does (Risk 3)",
@@ -395,7 +413,800 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-1 / TC-7: an anonymous list answers 200 in the ORI envelope",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/events",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-1: 200 without credentials, no 401 challenge', () => {",
+              "    pm.expect(pm.response.code).to.eql(200);",
+              "    pm.expect(pm.response.headers.has('WWW-Authenticate')).to.eql(false);",
+              "});",
+              "pm.test('TC-7: the top-level keys are exactly @context, @type, count and items', () => {",
+              "    pm.expect(Object.keys(pm.response.json()).sort()).to.eql(['@context', '@type', 'count', 'items']);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-2: an unknown resource answers 404",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/not-a-real-resource",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-2: 404', () => pm.expect(pm.response.code).to.eql(404));",
+              "pm.test('never 403 (TC-11)', () => pm.expect(pm.response.code).to.not.eql(403));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: organizations matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/organizations",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('organizations: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/organizations'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('organizations: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('organizations: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('organizations: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: persons matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/persons",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('persons: no person carries an email on this anonymous endpoint', () => (parity.items || []).forEach((person) => pm.expect(person).to.not.have.property('email')));",
+              "pm.test('persons: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/persons'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('persons: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('persons: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('persons: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: memberships matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/memberships",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('memberships: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/memberships'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('memberships: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('memberships: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('memberships: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: events matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/events",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('events: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/events'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('events: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('events: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('events: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: agendaitems matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/agendaitems",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('agendaitems: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/agendaitems'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('agendaitems: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('agendaitems: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('agendaitems: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: motions matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/motions",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('motions: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/motions'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('motions: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('motions: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('motions: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: amendments matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/amendments",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('amendments: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/amendments'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('amendments: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('amendments: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('amendments: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: voteevents matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/voteevents",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('voteevents: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/voteevents'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('voteevents: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('voteevents: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('voteevents: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: votes matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/votes",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('votes: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/votes'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('votes: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('votes: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('votes: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: reports matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/reports",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('reports: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/reports'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('reports: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('reports: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('reports: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-3: publications matches OriController",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/publications",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// TC-3: the same collection from decidiq's OriController, anonymously, compared order-insensitively.",
+              "const parity = pm.response.json();",
+              "pm.test('publications: the endpoint answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/publications'), method: 'GET', header: { 'OCS-APIRequest': 'true', Accept: 'application/json', Cookie: '' } }, (error, response) => {",
+              "    pm.test('publications: OriController answers 200', () => { pm.expect(error).to.eql(null); pm.expect(response.code).to.eql(200); });",
+              "    if (error || response.code !== 200) { return; }",
+              "    const ori = response.json();",
+              "    const sorted = (items) => (items || []).map((item) => JSON.stringify(item)).sort();",
+              "    pm.test('publications: @context, @type and count match OriController', () => {",
+              "        pm.expect(parity['@context']).to.eql(ori['@context']);",
+              "        pm.expect(parity['@type']).to.eql(ori['@type']);",
+              "        pm.expect(parity.count).to.eql(ori.count);",
+              "    });",
+              "    pm.test('publications: the items match OriController field for field (order-insensitive)', () => pm.expect(sorted(parity.items)).to.eql(sorted(ori.items)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-4 / TC-5: the motions list holds no amendment and no non-public decision",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/motions",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const ids = (pm.response.json().items || []).map((item) => JSON.stringify(item));",
+              "pm.test('TC-5: the staged amendment is not a motion', () => pm.expect(ids.join('\\n')).to.not.include(pm.collectionVariables.get('oriAmendment')));",
+              "pm.test('TC-5: every item is a motion', () => (pm.response.json().items || []).forEach((item) => pm.expect(JSON.stringify(item)).to.not.match(/\"classification\":\\s*\"amendment\"/i)));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-5: the amendments list holds the staged amendment",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/amendments",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-5: the staged public amendment is listed', () => pm.expect(JSON.stringify(pm.response.json().items || [])).to.include(pm.collectionVariables.get('oriAmendment')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-4: the events list holds no draft meeting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/events",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-4: the staged draft meeting is absent', () => pm.expect(JSON.stringify(pm.response.json().items || [])).to.not.include(pm.collectionVariables.get('oriDraftMeeting')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-13: CORS preflight on the collection matches OriController",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "https://ris.example.nl"
+          },
+          {
+            "key": "Access-Control-Request-Method",
+            "value": "GET"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/events",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-13: the preflight answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "const mine = pm.response.headers;",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/events'), method: 'OPTIONS', header: { Origin: 'https://ris.example.nl', 'Access-Control-Request-Method': 'GET', Cookie: '' } }, (error, response) => {",
+              "    pm.test('TC-13: the Access-Control-Allow headers match OriController', () => {",
+              "        pm.expect(error).to.eql(null);",
+              "        ['Access-Control-Allow-Origin', 'Access-Control-Allow-Methods', 'Access-Control-Allow-Headers'].forEach((name) => pm.expect(mine.get(name), name).to.eql(response.headers.get(name)));",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
+    },
+    {
+      "name": "TC-13: CORS preflight on the single item matches OriController",
+      "request": {
+        "method": "OPTIONS",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "https://ris.example.nl"
+          },
+          {
+            "key": "Access-Control-Request-Method",
+            "value": "GET"
+          }
+        ],
+        "url": "{{base_url}}/index.php/apps/integriq/api/endpoint/ori-parity/v1/events/{{oriDraftMeeting}}",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('TC-13: the preflight answers 200', () => pm.expect(pm.response.code).to.eql(200));",
+              "const mine = pm.response.headers;",
+              "pm.sendRequest({ url: pm.variables.replaceIn('{{base_url}}/index.php/apps/decidiq/api/ori/v1/events/{{oriDraftMeeting}}'), method: 'OPTIONS', header: { Origin: 'https://ris.example.nl', 'Access-Control-Request-Method': 'GET', Cookie: '' } }, (error, response) => {",
+              "    pm.test('TC-13: the Access-Control-Allow headers match OriController', () => {",
+              "        pm.expect(error).to.eql(null);",
+              "        ['Access-Control-Allow-Origin', 'Access-Control-Allow-Methods', 'Access-Control-Allow-Headers'].forEach((name) => pm.expect(mine.get(name), name).to.eql(response.headers.get(name)));",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "Teardown: delete the staged decision",

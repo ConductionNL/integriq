@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * Decision 178: integriq translates the source's field names into each target
  * schema's own property names, in its providers.
  *
- * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+ * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
  */
 class SourceFieldMapTest extends TestCase {
 	/**

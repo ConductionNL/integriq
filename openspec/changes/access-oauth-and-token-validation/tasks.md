@@ -33,7 +33,8 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
   - An admin sets a consumer's secret with `POST /api/consumers/{id}/client-secret`. The secret is shown once and only its password hash is stored, as `clientSecretHash` (consumer 1.2.0).
   - `IntegriqConsumerSource` accepts integriq's own tokens, finding the consumer by `sub` and checking against the published key only.
 - [x] Implement
-- [ ] Test (PHPUnit for issue and refuse; Newman for the token endpoint; an assertion that the key is a credentialRef). The PHPUnit part is done in `tests/Unit/Service/OAuth/TokenIssuerTest.php`, including that the private key reaches only the broker. Newman is written in folder 18 of `tests/postman/integriq.postman_collection.json` (issuer key and key set without private members, client secret shown once and absent from the OpenRegister object, token issued as a JWS with the consumer's scopes, and the invalid_client, unsupported_grant_type and invalid_scope refusals); not run here: it needs a live instance.
+- [x] Test (PHPUnit for issue and refuse; Newman for the token endpoint; an assertion that the key is a credentialRef). The PHPUnit part is done in `tests/Unit/Service/OAuth/TokenIssuerTest.php`, including that the private key reaches only the broker. Newman is written in folder 18 of `tests/postman/integriq.postman_collection.json` (issuer key and key set without private members, client secret shown once and absent from the OpenRegister object, token issued as a JWS with the consumer's scopes, and the invalid_client, unsupported_grant_type and invalid_scope refusals); not run here: it needs a live instance.
+  - 2026-11-25 live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 43ba16d9): Newman folder 18, 19 requests, 46/46 assertions: the issuer key is created and listed in the JWKS without private members, the client secret is shown once and absent from the OpenRegister object, the token is a three-part RS256 JWT with the consumer's scope, a foreign scope is 400 and a wrong or missing secret 401. Found and fixed: the issuer key called OpenRegister's removed eight-argument `mint()` (500; now `mintCredential()`), and the token endpoint read the client rendered, which strips the writeOnly `clientSecretHash`, so every client got 401.
 
 ### Task 4: Protected-resource metadata and the 401 header
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004`
@@ -45,7 +46,8 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
   - A call without a token to such an endpoint now gets 401 instead of 403, with `WWW-Authenticate: Bearer resource_metadata="…"`. A refused token gets the same header. Other authentication types keep their answers.
   - The file list named `lib/Controller/WellKnownController.php`, `lib/Service/EndpointService.php` and `appinfo/routes.php`. The document is built in the new `lib/Service/OAuth/ProtectedResourceMetadata.php`.
 - [x] Implement
-- [ ] Test (Newman: metadata document shape, 401 header, nothing for an open endpoint). PHPUnit covers the same three points in `tests/Unit/Service/OAuth/ProtectedResourceMetadataTest.php`. Newman is written in folder 18 (the metadata document of a token-protected endpoint, 404 for an open one, and the 401 `Bearer resource_metadata` challenge); not run here: it needs a live instance.
+- [x] Test (Newman: metadata document shape, 401 header, nothing for an open endpoint). PHPUnit covers the same three points in `tests/Unit/Service/OAuth/ProtectedResourceMetadataTest.php`. Newman is written in folder 18 (the metadata document of a token-protected endpoint, 404 for an open one, and the 401 `Bearer resource_metadata` challenge); not run here: it needs a live instance.
+  - 2026-11-25 live, same run: the metadata document of a token-protected endpoint (resource, one authorization server, sorted scopes), 404 for an open endpoint, and the 401 `WWW-Authenticate: Bearer resource_metadata="…"` header, which `transformError()` dropped when it rebuilt the 401 as a problem document (fixed; `EndpointServiceErrorHeadersTest`). The rule fixture also lacked the schema's required `action`.
 
 ### Task 5: Scopes on consumers and endpoints
 - **spec_ref**: `openspec/changes/access-oauth-and-token-validation/specs/consumer-management/spec.md#requirement-a-consumer-is-limited-to-the-endpoints-and-actions-its-scopes-allow-req-tokv-005`
@@ -66,6 +68,7 @@ Kind: code. Size L. Rows `integriq:acc-jwks`, `acc-oidc`, `acc-protected-resourc
 
 ## Verification
 - [x] `openspec validate access-oauth-and-token-validation --type change --strict` passes (openspec 2.2.0, 25 Nov 2026)
-- [ ] PHPUnit and Newman run, exit codes read
+- [x] PHPUnit and Newman run, exit codes read
+  - 2026-11-25: PHPUnit `tests/Unit/Service/OAuth` 18/18 and `EndpointServiceErrorHeadersTest` 2/2 (exit 0); Newman folder 18 exit 0, 46/46.
 - [x] No private key or client secret appears in any OR object read, asserted in a test
   - `TokenIssuerTest::testNoObjectReadCarriesThePrivateKeyOrAClientSecret`: after a key is created, a secret set and a token issued, no stored consumer holds the secret, the PEM or `PRIVATE KEY`; the consumer keeps only `clientSecretHash`, which `99-consumer-secrets-writeonly.json` marks `writeOnly`, and no consumer property is named for key or secret material in the clear.

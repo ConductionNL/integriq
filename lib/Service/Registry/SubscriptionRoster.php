@@ -125,7 +125,7 @@ class SubscriptionRoster implements SubscriptionRosterInterface {
 	 *
 	 * @return array<int,string> Target schema slugs, in the order they were recorded.
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	public function targets(string $registryId, string $identity): array {
 		$targets = ($this->allTargets(registryId: $registryId)[$identity] ?? []);
@@ -146,7 +146,7 @@ class SubscriptionRoster implements SubscriptionRosterInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/registry-update-maps-source-fields/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
+	 * @spec openspec/specs/registry-subscription-connector/spec.md#requirement-a-change-is-posted-in-each-target-schemas-own-property-names-req-rsc-004
 	 */
 	public function addTarget(string $registryId, string $identity, string $targetSchema): void {
 		$current = $this->targets(registryId: $registryId, identity: $identity);

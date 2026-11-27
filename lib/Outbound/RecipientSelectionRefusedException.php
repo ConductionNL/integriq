@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md
+ * @spec openspec/specs/message-recipient-selection/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use RuntimeException;
 /**
  * A recipient decision that is refused, with a machine code and a readable reason.
  *
- * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
+ * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
  */
 class RecipientSelectionRefusedException extends RuntimeException {
 
@@ -43,7 +43,7 @@ class RecipientSelectionRefusedException extends RuntimeException {
 	 * @param string $reason      The readable reason, naming the recipient.
 	 * @param string $address     The recipient the refusal is about ('' when none).
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
 	 */
 	public function __construct(
 		private readonly string $refusalCode,
@@ -59,7 +59,7 @@ class RecipientSelectionRefusedException extends RuntimeException {
 	 *
 	 * @return string One of the RecipientResolver::REFUSED_* codes.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-a-suppression-carries-a-reason-and-is-refused-without-one-req-mrs-003
 	 */
 	public function getRefusalCode(): string {
 		return $this->refusalCode;
@@ -71,7 +71,7 @@ class RecipientSelectionRefusedException extends RuntimeException {
 	 *
 	 * @return string The address, or '' when the refusal is about no single recipient.
 	 *
-	 * @spec openspec/changes/one-off-and-suppressed-recipients/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
+	 * @spec openspec/specs/message-recipient-selection/spec.md#requirement-the-recipient-decision-travels-on-the-delivery-request-req-mrs-006
 	 */
 	public function getAddress(): string {
 		return $this->address;

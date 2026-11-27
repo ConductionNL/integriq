@@ -322,7 +322,7 @@ class DsoIngestServiceTest extends TestCase {
 	 * Intake writes every bijlage reference as a `pending` attachment entry,
 	 * and the register accepts what it writes.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
 	 */
 	public function testIngestWritesBijlagenAsPendingAttachments(): void {
 		$service = $this->buildService();
@@ -360,7 +360,7 @@ class DsoIngestServiceTest extends TestCase {
 	 * Two bijlagen with the same name get distinct file names, because they
 	 * land in the same object folder.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
 	 */
 	public function testIngestMakesAttachmentNamesUnique(): void {
 		$service = $this->buildService();
@@ -390,7 +390,7 @@ class DsoIngestServiceTest extends TestCase {
 	 * Intake queues one download job for a request with bijlagen, carrying
 	 * the request's uuid, and none for a request without.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-the-endpoint-does-not-wait-for-the-bijlagen
 	 */
 	public function testIngestQueuesTheDownloadOnlyWhenThereAreBijlagen(): void {
 		$service = $this->buildService();

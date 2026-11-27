@@ -3540,7 +3540,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-oauth-rule\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
+              "raw": "{\"name\": \"newman-oauth-rule\", \"action\": \"get\", \"type\": \"authentication\", \"order\": 1, \"timing\": \"before\", \"isEnabled\": true, \"configuration\": {\"authentication\": {\"type\": \"jwt\", \"requiredScopes\": {\"GET\": [\"zaken:read\"], \"POST\": [\"zaken:write\"]}}}}"
             }
           },
           "event": [
@@ -3772,7 +3772,7 @@
             "description": "objecten-api-facade: a schema of its own, so the checks touch no real data.",
             "body": {
               "mode": "raw",
-              "raw": "{\"title\":\"Newman boom\",\"slug\":\"newman-boom-{{objStamp}}\",\"properties\":{\"soort\":{\"type\":\"string\"},\"hoogte\":{\"type\":\"number\"}}}"
+              "raw": "{\"title\":\"Newman boom\",\"slug\":\"newman-boom-{{objStamp}}\",\"properties\":{\"soort\":{\"type\":\"string\"},\"hoogte\":{\"type\":\"number\"},\"geometry\":{\"type\":\"object\"}}}"
             }
           },
           "event": [
@@ -3798,7 +3798,9 @@
                   "const b = pm.response.json();",
                   "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
                   "pm.expect(id, 'the created id').to.not.be.undefined;",
-                  "pm.collectionVariables.set('objSchema', String(id));"
+                  "pm.collectionVariables.set('objSchema', String(id));",
+                  "// A register lists its schemas by numeric id; a uuid there is never resolved.",
+                  "pm.collectionVariables.set('objSchemaNumId', String(b.id || (b['@self'] && b['@self'].id)));"
                 ]
               }
             }
@@ -3817,7 +3819,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[\"{{objSchema}}\"]}"
+              "raw": "{\"title\":\"Newman objecten\",\"slug\":\"newman-objecten-{{objStamp}}\",\"schemas\":[{{objSchemaNumId}}]}"
             }
           },
           "event": [
@@ -3830,7 +3832,9 @@
                   "const b = pm.response.json();",
                   "const id = b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || (b.object && (b.object.uuid || b.object.id));",
                   "pm.expect(id, 'the created id').to.not.be.undefined;",
-                  "pm.collectionVariables.set('objRegister', String(id));"
+                  "pm.collectionVariables.set('objRegister', String(id));",
+                  "// OpenRegister deletes a register or schema by numeric id only.",
+                  "pm.collectionVariables.set('objRegisterNumId', String(b.id || (b['@self'] && b['@self'].id)));"
                 ]
               }
             }
@@ -3850,7 +3854,7 @@
             "description": "REQ-OAF-001: an objecttype is a schema named on purpose, under a stable published uuid.",
             "body": {
               "mode": "raw",
-              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"register\":\"newman-objecten-{{objStamp}}\",\"schema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
+              "raw": "{\"publishedUuid\":\"{{objTypeUuid}}\",\"name\":\"newman-boom\",\"objectsRegister\":\"newman-objecten-{{objStamp}}\",\"objectsSchema\":\"newman-boom-{{objStamp}}\",\"versions\":[\"1\",\"2\"]}"
             }
           },
           "event": [
@@ -3887,7 +3891,7 @@
             "description": "The token's key lives in the credential broker; the token only names the credential.",
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"]}"
+              "raw": "{\"name\": \"newman-objecten-read-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objReadKey}}\", \"allowedApps\": [\"openconnector\"], \"scope\": \"organisation\"}"
             }
           },
           "event": [
@@ -3924,7 +3928,7 @@
             "description": "The token's key lives in the credential broker; the token only names the credential.",
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"]}"
+              "raw": "{\"name\": \"newman-objecten-write-{{objStamp}}\", \"provider\": \"generic-apikey\", \"secret\": \"{{objWriteKey}}\", \"allowedApps\": [\"openconnector\"], \"scope\": \"organisation\"}"
             }
           },
           "event": [
@@ -4036,13 +4040,13 @@
           ]
         },
         {
-          "name": "Objecttypen: one objecttype carries the schema's jsonSchema",
+          "name": "Objecttypen: an allowed version carries the schema's jsonSchema",
           "request": {
             "auth": {
               "type": "noauth"
             },
             "method": "GET",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes/{{objTypeUuid}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objecttypes/{{objTypeUuid}}/versions/1",
             "header": [
               {
                 "key": "Authorization",
@@ -4058,9 +4062,8 @@
                 "exec": [
                   "pm.test('found', () => pm.response.to.have.status(200));",
                   "const b = pm.response.json();",
-                  "pm.test('its name and jsonSchema', () => {",
-                  "  pm.expect(b.name).to.eql('newman-boom');",
-                  "  pm.expect(JSON.stringify(b)).to.include('soort');",
+                  "pm.test('its jsonSchema (the objecttype lists its versions; the jsonSchema is on the version)', () => {",
+                  "  pm.expect(JSON.stringify(b.jsonSchema)).to.include('soort');",
                   "});"
                 ]
               }
@@ -4146,7 +4149,7 @@
           ]
         },
         {
-          "name": "Objecten: an objecttype the token does not name is a 403",
+          "name": "Objecten: an objecttype nobody publishes answers 404",
           "request": {
             "auth": {
               "type": "noauth"
@@ -4166,7 +4169,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('refused', () => pm.response.to.have.status(403));"
+                  "pm.test('not found (REQ-OAF-005: an unknown objecttype is a 404; a published one the token does not name is a 403, covered by Playwright)', () => pm.response.to.have.status(404));"
                 ]
               }
             }
@@ -4321,7 +4324,7 @@
               "type": "noauth"
             },
             "method": "GET",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4513,7 +4516,7 @@
               "type": "noauth"
             },
             "method": "PATCH",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4553,7 +4556,7 @@
               "type": "noauth"
             },
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4580,7 +4583,7 @@
               "type": "noauth"
             },
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4607,7 +4610,7 @@
               "type": "noauth"
             },
             "method": "GET",
-            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}",
+            "url": "{{base_url}}/index.php/apps/integriq/api/v2/objects/{{objObject}}?type={{objTypeUuid}}",
             "header": [
               {
                 "key": "Authorization",
@@ -4736,7 +4739,7 @@
           "name": "Teardown: delete the register",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{objRegister}}",
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{objRegisterNumId}}",
             "header": []
           },
           "event": [
@@ -4755,7 +4758,7 @@
           "name": "Teardown: delete the schema",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{objSchema}}",
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{objSchemaNumId}}",
             "header": []
           },
           "event": [

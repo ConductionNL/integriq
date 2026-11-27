@@ -259,6 +259,24 @@ class CatalogRegistryServiceTest extends TestCase {
 	}//end testTheLearningPlatformTemplatesAreEducationData()
 
 	/**
+	 * The three payroll bureau templates show under Payroll, one of shillinq's bookkeeping categories.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connectors-hr-data-exchange/specs/hr-data-exchange/spec.md#requirement-a-ready-payroll-handoff-reaches-the-bureau-and-its-payslips-come-back-req-hrx-001
+	 */
+	public function testThePayrollBureauTemplatesArePayroll(): void {
+		$bySlug = array_column($this->makeService()->collect(), null, 'slug');
+
+		foreach (['loket-payroll', 'nmbrs-payroll', 'payroll-sftp-drop'] as $slug) {
+			$this->assertSame(expected: 'Payroll', actual: $bySlug['source-template:' . $slug]['category'], message: $slug);
+			$this->assertSame(expected: $slug, actual: $bySlug['source-template:' . $slug]['sourceTemplateSlug'], message: $slug);
+		}
+
+		$this->assertContains(needle: 'Payroll', haystack: CatalogRegistryService::BOOKKEEPING_CATEGORIES);
+	}//end testThePayrollBureauTemplatesArePayroll()
+
+	/**
 	 * The three service desk templates show under Service management.
 	 *
 	 * @return void

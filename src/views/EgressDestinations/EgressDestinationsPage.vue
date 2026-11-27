@@ -46,10 +46,7 @@
 			}}
 		</p>
 
-		<NcNoteCard
-			v-if="error"
-			type="error"
-			data-testid="egress-error">
+		<NcNoteCard v-if="error" type="error" data-testid="egress-error">
 			{{ error }}
 		</NcNoteCard>
 
@@ -60,7 +57,10 @@
 			{{ verdictLine }}
 		</NcNoteCard>
 
-		<ul v-if="loaded" class="egressDestinations__counts" data-testid="egress-counts">
+		<ul
+			v-if="loaded"
+			class="egressDestinations__counts"
+			data-testid="egress-counts">
 			<li v-for="zone in zones" :key="zone">
 				{{ zoneText(zone) }}: <strong>{{ counts[zone] || 0 }}</strong>
 			</li>
@@ -80,7 +80,9 @@
 				{{ row.country || t('integriq', 'Unknown') }}
 			</template>
 			<template #column-zone="{ row }">
-				<span class="egressDestinations__zone" :class="`egressDestinations__zone--${row.zone}`">
+				<span
+					class="egressDestinations__zone"
+					:class="`egressDestinations__zone--${row.zone}`">
 					{{ zoneText(row.zone) }}
 				</span>
 			</template>
@@ -178,14 +180,23 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const { data } = await axios.get(generateUrl('/apps/integriq/api/egress/destinations'))
-				this.destinations = Array.isArray(data?.destinations) ? data.destinations : []
+				const { data } = await axios.get(
+					generateUrl('/apps/integriq/api/egress/destinations'),
+				)
+				this.destinations = Array.isArray(data?.destinations)
+					? data.destinations
+					: []
 				this.verdict = data?.verdict ?? 'not-proven'
 				this.counts = data?.counts ?? {}
 				this.euOnly = data?.euOnly === true
 				this.loaded = true
 			} catch (exception) {
-				this.error = exception?.response?.data?.error || t('integriq', 'The outbound destinations could not be loaded.')
+				this.error =
+					exception?.response?.data?.error
+					|| t(
+						'integriq',
+						'The outbound destinations could not be loaded.',
+					)
 			} finally {
 				this.loading = false
 			}
@@ -202,13 +213,18 @@ export default {
 			this.saving = true
 			this.error = ''
 			try {
-				const { data } = await axios.put(generateUrl('/apps/integriq/api/egress/eu-only'), { enabled })
+				const { data } = await axios.put(
+					generateUrl('/apps/integriq/api/egress/eu-only'),
+					{ enabled },
+				)
 				this.euOnly = data?.euOnly === true
 			} catch (exception) {
 				const status = exception?.response?.status
-				this.error = status === 409
-					? blockingText(exception.response.data, t)
-					: exception?.response?.data?.error || t('integriq', 'EU only mode could not be saved.')
+				this.error =
+					status === 409
+						? blockingText(exception.response.data, t)
+						: exception?.response?.data?.error
+							|| t('integriq', 'EU only mode could not be saved.')
 			} finally {
 				this.saving = false
 			}
@@ -226,7 +242,13 @@ export default {
 				source: {
 					id: row.sourceId,
 					name: row.name,
-					residency: row.country ? { country: row.country, basis: row.basis, evidence: row.evidence } : null,
+					residency: row.country
+						? {
+								country: row.country,
+								basis: row.basis,
+								evidence: row.evidence,
+							}
+						: null,
 				},
 			})
 		},

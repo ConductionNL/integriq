@@ -219,4 +219,46 @@ final class RemoteFileSessionFactoryTest extends TestCase {
 		$this->expectExceptionMessage('SFTP is not available on this instance: phpseclib 3 is not installed.');
 		(new RemoteFileSessionFactory(sftpClass: 'No\\Such\\Sftp'))->presentedFingerprint(server: $this->server(pin: ''));
 	}//end testOnlyAnAvailableSftpServerHasAPresentedKey()
+	/**
+	 * A server that cannot be reached is a RemoteFileException naming the host,
+	 * which the controller answers with a 502, and the connection is closed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	public function testAServerThatCannotBeReachedIsARemoteFileException(): void {
+		$sftp = new class {
+			/** @var list<string> */
+			public array $calls = [];
+
+			/**
+			 * Opening the connection fails, as phpseclib does for a host that does not resolve.
+			 *
+			 * @return string
+			 */
+			public function getServerPublicHostKey(): string {
+				$this->calls[] = 'hostkey';
+				throw new \phpseclib3\Exception\UnableToConnectException('Cannot connect to sftp.example.invalid:22.');
+			}
+
+			/**
+			 * Close the connection.
+			 *
+			 * @return void
+			 */
+			public function disconnect(): void {
+				$this->calls[] = 'disconnect';
+			}
+		};
+
+		try {
+			(new RemoteFileSessionFactory())->fingerprintOfConnection(sftp: $sftp, server: $this->server(pin: ''));
+			$this->fail(message: 'an unreachable server gave a fingerprint');
+		} catch (RemoteFileException $exception) {
+			$this->assertStringContainsString(needle: 'could not be reached: Cannot connect to sftp.example.invalid:22.', haystack: $exception->getMessage());
+		}
+
+		$this->assertSame(expected: ['hostkey', 'disconnect'], actual: $sftp->calls);
+	}//end testAServerThatCannotBeReachedIsARemoteFileException()
 }//end class

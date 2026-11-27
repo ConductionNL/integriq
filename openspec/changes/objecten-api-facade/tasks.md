@@ -170,7 +170,8 @@
   `docs/features/README.md`. The e2e and Newman runs are still open (they
   need an instance).
 - [x] Implement (throttling, the declaration reader, the catalogue card and the docs are each DONE above; the runs belong to Test)
-- [ ] Test (`tests/e2e/objecten-api-facade.spec.ts`, Newman over the two APIs)
+- [x] Test (`tests/e2e/objecten-api-facade.spec.ts`, Newman over the two APIs)
+  - 2026-11-25 live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 43ba16d9 with openregister#11281): Playwright `objecten-api-facade.spec.ts` 5/5, Newman folder 16a 34 requests, 44/44 assertions. Found and fixed: OpenRegister drops `register`/`schema` from an object body, so a configured objecttype never stored them (now `objectsRegister`/`objectsSchema`, old names still read; leaf-app `objecttypes.json` keeps `register`/`schema`); a token's key was resolved with no acting user, so a sessionless counterparty never got past the broker (now read as the token's principal, from an organisation credential; the broker's tenant-filtered lookup is openregister#11281); a record's `url` was the bare host; the runs linked schemas to registers by uuid, read `jsonSchema` off the objecttype instead of its version, expected 403 for an unknown type (REQ-OAF-005 says 404), omitted `type` on the detail routes and declared no `geometry` property.
   - Written, not yet run (they need the live instance): `tests/e2e/objecten-api-facade.spec.ts` covers the five scenarios the spec names for it, every counterparty call in a request context with an empty storage state; Newman folder "16a — Objecten and Objecttypen API" in `tests/postman/integriq.postman_collection.json` walks the objecttype reads, the token matrix, create, read, `data_attrs`, the geometry search, partial update and delete, and cleans up.
 
 ## Verification

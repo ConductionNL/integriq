@@ -529,15 +529,39 @@ class EndpointService implements EndpointServiceInterface {
 				$legacy['error'] = $error;
 			}
 
+			// Keep the answer's headers: a token-protected endpoint's 401 carries the
+			// WWW-Authenticate challenge that names its metadata URL (REQ-TOKV-004),
+			// and the problem document must not drop it.
 			return ProblemResponse::fromLegacy(
 				data: array_merge($resultData, $legacy),
 				status: $result->getStatus(),
-				instance: $request->getId()
+				instance: $request->getId(),
+				headers: self::headersWithoutContentType(response: $result)
 			);
 		}
 
 		return $result;
 	}//end transformError()
+
+	/**
+	 * An answer's headers, without its Content-Type, for the problem document that replaces it.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/access-oauth-and-token-validation/specs/authorization-jwt/spec.md#requirement-a-protected-endpoint-publishes-where-to-get-a-token-req-tokv-004
+	 */
+	private static function headersWithoutContentType(Response $response): array {
+		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
+		if (is_array($headers) === false) {
+			return [];
+		}
+
+		unset($headers['Content-Type']);
+
+		return $headers;
+	}//end headersWithoutContentType()
 
 	/**
 	 * Turn a gateway error answer into a problem document, keeping its headers.
@@ -565,10 +589,12 @@ class EndpointService implements EndpointServiceInterface {
 			$data = ['error' => (string)json_encode($data)];
 		}
 
-		$headers = (new \ReflectionProperty(Response::class, 'headers'))->getValue($response);
-		unset($headers['Content-Type']);
-
-		return ProblemResponse::fromLegacy(data: $data, status: $response->getStatus(), instance: $request->getId(), headers: $headers);
+		return ProblemResponse::fromLegacy(
+			data: $data,
+			status: $response->getStatus(),
+			instance: $request->getId(),
+			headers: self::headersWithoutContentType(response: $response)
+		);
 	}//end asProblem()
 
 	/**
@@ -1640,8 +1666,8 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-per-tier-rate-limit-enforcement-extends-the-inbound-rate-limiter-req-apg-005
 	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscription-approval-gate-reuses-the-hitl-approvalservice-req-apg-004
 	 * @spec openspec/specs/consumer-management/spec.md#requirement-per-product-tier-policy-takes-precedence-over-the-consumer-level-rate-limit-req-con-sub-002
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
-	 * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+	 * @spec openspec/specs/api-product-gateway/spec.md#requirement-subscribers-are-told-when-a-product-they-use-changes-req-devp-004
 	 */
 	private function enforceInboundRateLimit(IRequest $request, ObjectEntity $endpoint): ?JSONResponse {
 		$consumer = $this->authorizationService->getResolvedConsumer();
@@ -4602,7 +4628,9 @@ class EndpointService implements EndpointServiceInterface {
 		if (isset($authentication['header']) === true) {
 			// Convert configured header name to lowercase + underscore variant
 			// for a single normalised lookup against $normalisedHeaders.
-			$lookupKey = strtolower((string)$authentication['header']);
+			// The request headers come from $_SERVER (HTTP_X_API_KEY), so a dash
+			// in the configured name is an underscore there.
+			$lookupKey = str_replace(search: '-', replace: '_', subject: strtolower((string)$authentication['header']));
 			$header = ($normalisedHeaders[$lookupKey] ?? null);
 		}
 
@@ -4862,7 +4890,7 @@ class EndpointService implements EndpointServiceInterface {
 	 */
 	private function processMappingRule(ObjectEntity $rule, array $data): array {
 		$config = $rule->getObject()['configuration'] ?? [];
-		$mapping = $this->mappingService->getMapping($config['mapping']);
+		$mapping = $this->mappingService->getRuleMapping(mappingId: (string)($config['mapping'] ?? ''), rule: $rule);
 
 		$data = $this->processMapping(rule: $rule, mapping: $mapping, data: $data);
 

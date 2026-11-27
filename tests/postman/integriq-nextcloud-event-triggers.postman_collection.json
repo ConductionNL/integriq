@@ -314,7 +314,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "POST /events/subscriptions — ungranted Calendar family is 403 for a non-admin",
@@ -366,7 +369,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "POST /events/subscriptions — ungranted Tables family is 403 for a non-admin",
@@ -418,7 +424,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "POST /events/subscriptions — ungranted Forms family is 403 for a non-admin",
@@ -470,7 +479,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "POST /events/subscriptions — a non-Nextcloud type passes the family gate for the member",
@@ -524,7 +536,10 @@
             ]
           }
         }
-      ]
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      }
     },
     {
       "name": "POST /events/subscriptions — subscribe with action and retryPolicy",
@@ -880,6 +895,18 @@
           }
         }
       ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Nextcloud's CSRF check refuses a basic-auth call that also carries the session cookie Newman keeps.",
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' })"
+        ]
+      }
     }
   ]
 }

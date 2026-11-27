@@ -1,11 +1,12 @@
+const { withLeanBundles } = require('@conduction/nextcloud-vue/webpack')
+const webpackConfig = require('@nextcloud/webpack-vue-config')
 /**
  * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
 const path = require('path')
-const webpack = require('webpack')
-const webpackConfig = require('@nextcloud/webpack-vue-config')
 const { VueLoaderPlugin } = require('vue-loader')
+const webpack = require('webpack')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
@@ -214,4 +215,7 @@ webpackConfig.plugins = [
 // can resolve past the render wiring and the workaround is obsolete. Turning
 // tree-shaking off wholesale only cost bundle size; it is not reinstated.
 
-module.exports = webpackConfig
+// Keep the library's lazy chunks lazy (icon packs, charts, the code editor)
+// and stop css-loader writing source maps into the JavaScript. Applied last,
+// after the app has set its own rules and optimization.
+module.exports = withLeanBundles(webpackConfig)

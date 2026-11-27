@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Spec coverage: openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * Spec coverage: openspec/specs/outbound-message-log/spec.md
  *
  * The scenarios here are the ones an administrator actually performs: finding
  * where a send failed, filtering the log as a queue, retrying from it,

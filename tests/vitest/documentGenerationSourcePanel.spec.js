@@ -177,8 +177,8 @@ describe('the document generation panel on the source page', () => {
 
 		expect(widget).toBeTruthy()
 		const registry = readFileSync(join(root, 'src/registry.js'), 'utf8')
-		expect(registry).toContain(
-			"import DocumentGenerationSourcePanel from './components/DocumentGenerationSourcePanel.vue'",
+		expect(registry).toMatch(
+			/const DocumentGenerationSourcePanel = lazyComponent\(\s*\(\) => import\('\.\/components\/DocumentGenerationSourcePanel\.vue'\),\s*'DocumentGenerationSourcePanel',?\s*\)/,
 		)
 		expect(registry).toMatch(/^\tDocumentGenerationSourcePanel,$/m)
 	})

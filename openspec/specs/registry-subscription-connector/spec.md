@@ -53,3 +53,38 @@ An unchanged payload MUST post nothing.
 - WHEN the poll job runs
 - THEN one POST to `/api/registry/brp/updates` carries the BSN, the new address and the event reference, and nothing is written to any integriq-owned table
 - @e2e exclude {background job against a live registry endpoint; covered by PHPUnit with a log provider fixture and a faked HTTP client}
+
+### Requirement: A change is posted in each target schema's own property names (REQ-RSC-004)
+
+A provider whose source names fields differently from a requesting schema MUST declare, per target schema slug, which source field becomes which schema property. When a subscription goes active, integriq MUST record the requesting object's schema slug for that identity, and the poll job MUST post one update per recorded target schema, carrying only the mapped fields under their schema names. The scenarios below fix what is posted without a map, without a target, and when nothing is left.
+
+#### Scenario: A dossiq person moves house
+- GIVEN an active BRP subscription requested by a dossiq `brpPerson` object
+- AND `pollChanges()` returning `verblijfplaats` and `naam` for its BSN
+- WHEN the poll job runs
+- THEN one POST to `/api/registry/brp/updates` carries `residence` and `name`, and no source field name
+- @e2e exclude {background job against a live registry endpoint; covered by PHPUnit with a faked update client}
+
+#### Scenario: A target schema without a map keeps the source names
+- GIVEN an active KvK subscription requested by a schema the provider has no map for
+- WHEN the poll job posts a change for it
+- THEN the POST carries the source's own field names
+- @e2e exclude {background job; covered by PHPUnit}
+
+#### Scenario: A field the target schema does not take is left out
+- GIVEN a BRP change carrying `naam` and a field the `brpPerson` map does not list
+- WHEN the change is mapped to `brpPerson`
+- THEN only `name` is posted
+- @e2e exclude {pure mapping; covered by PHPUnit}
+
+#### Scenario: An identity with no recorded target is posted once, unchanged
+- GIVEN an active subscription whose identity has no recorded target schema
+- WHEN the poll job posts a change for it
+- THEN one POST carries the source's own field names
+- @e2e exclude {background job; covered by PHPUnit}
+
+#### Scenario: A mapped change that keeps no field posts nothing
+- GIVEN a change whose fields the target schema's map does not list
+- WHEN the change is mapped to that schema
+- THEN nothing is posted for that schema
+- @e2e exclude {pure mapping; covered by PHPUnit}

@@ -83,7 +83,9 @@ async function seedDatabaseSource(
  */
 async function openPanel(page: Page, id: string) {
 	await gotoAppRoute(page, `/sources/${id}`)
-	const panel = page.getByTestId('database-source-panel')
+	// CnBodySections sets its own data-testid on the section's root element,
+	// which replaces the component's `database-source-panel`.
+	const panel = page.getByTestId('cn-body-section-component-src-database')
 	await expect(panel).toBeVisible({ timeout: 20_000 })
 	return panel
 }

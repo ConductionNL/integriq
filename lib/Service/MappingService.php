@@ -51,6 +51,7 @@ use OCA\Integriq\Service\Format\MappingOutput;
 use OCA\Integriq\Twig\MappingExtension;
 use OCA\Integriq\Twig\MappingRuntimeLoader;
 use OCA\OpenRegister\Db\Mapping as OrMapping;
+use OCA\Integriq\Service\Helper\OrganisationBoundary;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FileService;
@@ -78,6 +79,8 @@ use Twig\Loader\ArrayLoader;
  * @spec openspec/specs/mapping-and-search/spec.md
  */
 class MappingService implements MappingServiceInterface {
+	use OrganisationBoundary;
+
 	/**
 	 * The OpenRegister register slug mappings live in.
 	 *
@@ -758,6 +761,39 @@ class MappingService implements MappingServiceInterface {
 
 		return (new OrMapping())->hydrate($object->getObject());
 	}//end getMapping()
+
+	/**
+	 * The mapping a rule names, read as the gateway's own configuration.
+	 *
+	 * A public endpoint's caller is anonymous, and OpenRegister's tenancy shows
+	 * an anonymous request no integriq object, so reading the mapping in the
+	 * caller's scope failed every anonymous call with a 500. The mapping is
+	 * read unscoped, as the endpoint reads its source, and bounded by the
+	 * rule's organisation: a mapping of another organisation is not found.
+	 *
+	 * @param string       $mappingId The mapping's id or uuid.
+	 * @param ObjectEntity $rule      The rule that names the mapping.
+	 *
+	 * @return OrMapping The hydrated mapping value object.
+	 *
+	 * @throws DoesNotExistException When the mapping does not exist or belongs to another organisation.
+	 *
+	 * @spec openspec/changes/ori-public-serving/specs/ori-public-serving/spec.md
+	 */
+	public function getRuleMapping(string $mappingId, ObjectEntity $rule): OrMapping {
+		$object = $this->orObjectService->find(
+			id: $mappingId,
+			options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
+			_rbac: false,
+			_multitenancy: false
+		);
+		$ruleOrganisation = $this->organisationOf(object: $rule);
+		if ($object === null || $this->sameOrganisation(first: $ruleOrganisation, second: $this->organisationOf(object: $object)) === false) {
+			throw new DoesNotExistException(sprintf('Mapping "%s" does not exist.', $mappingId));
+		}
+
+		return (new OrMapping())->hydrate($object->getObject());
+	}//end getRuleMapping()
 
 	/**
 	 * Retrieves all available mappings.

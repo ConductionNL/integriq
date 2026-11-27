@@ -1,0 +1,684 @@
+{
+	"info": {
+		"name": "Integriq — Peppol signed inbound webhook on the log provider (peppol-readable-payloads-and-scoped-consumer)",
+		"description": "Newman test of task 3 of openspec/changes/peppol-readable-payloads-and-scoped-consumer (REQ-009). `POST /api/peppol/inbound` refuses an unsigned notification and one signed with another secret (401), and takes a notification signed with the Peppol connection's secret (200). The `log` provider answers the fetch with its fixture invoice, so integriq stores a `peppol_inbound_document` with status `stored` and the UBL as a file on it. A redelivery of a stored document changes nothing.\n\nSetup creates an enabled Peppol source on the `log` provider and the Peppol connection (a `peppol-webhook` consumer with the shared secret, acting as the admin account); teardown deletes them and the stored document. The instance must hold no other `peppol-webhook` consumer: with two, the webhook does not guess and answers 503. Run it with tests/postman/integriq.postman_environment.json.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "ocBase",
+			"value": "{{base_url}}/index.php/apps/integriq/api"
+		},
+		{
+			"key": "orBase",
+			"value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq"
+		},
+		{
+			"key": "peppolSecret",
+			"value": ""
+		},
+		{
+			"key": "peppolReference",
+			"value": ""
+		},
+		{
+			"key": "inboundBody",
+			"value": ""
+		},
+		{
+			"key": "peppolSourceUuid",
+			"value": ""
+		},
+		{
+			"key": "peppolConsumerUuid",
+			"value": ""
+		},
+		{
+			"key": "inboundUuid",
+			"value": ""
+		},
+		{
+			"key": "inboundFileName",
+			"value": ""
+		},
+		{
+			"key": "inboundEventUuid",
+			"value": ""
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Nextcloud's CSRF check refuses a basic-auth call that also carries the session cookie Newman keeps.",
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' })"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "0. Setup (via OpenRegister)",
+			"item": [
+				{
+					"name": "PI.1 an enabled Peppol source on the log provider",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{orBase}}/source",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"source"
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"newman-peppol-log\", \"type\": \"peppol\", \"isEnabled\": true, \"location\": \"log://peppol\", \"configuration\": {\"provider\": \"log\"}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const run = Date.now() + '-' + Math.random().toString(36).slice(2, 8);",
+									"pm.collectionVariables.set('peppolSecret', 'peppol-' + run + '-' + Math.random().toString(36).slice(2, 14));",
+									"pm.collectionVariables.set('peppolReference', 'newman-doc-' + run);",
+									"pm.collectionVariables.set('inboundBody', JSON.stringify({ senderPeppolId: '0106:12345678', documentType: 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2', payloadReference: 'newman-doc-' + run }));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+									"pm.collectionVariables.set('peppolSourceUuid', id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.2 the Peppol connection: a consumer holding the shared secret, acting as admin",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{orBase}}/consumer",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"consumer"
+							]
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"newman-peppol-webhook\", \"description\": \"Newman: the Peppol access point's webhook trust\", \"authorizationType\": \"peppol-webhook\", \"userId\": \"{{admin_user}}\", \"authorizationConfiguration\": {\"scheme\": \"openconnector\", \"secret\": \"{{peppolSecret}}\"}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+									"const b = pm.response.json(); const id = b.uuid || b.id || (b['@self'] && b['@self'].id);",
+									"pm.collectionVariables.set('peppolConsumerUuid', id);",
+									"pm.test('the secret is not answered back', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('peppolSecret')));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "1. The signature",
+			"item": [
+				{
+					"name": "PI.3 an unsigned notification is refused",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{ocBase}}/peppol/inbound",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"peppol",
+								"inbound"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{inboundBody}}"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.cookies.jar().clear(pm.environment.get('base_url'), () => {});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('401', () => pm.response.to.have.status(401));",
+									"pm.test('invalid signature', () => pm.expect(pm.response.json().error).to.eql('invalid signature'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.4 a notification signed with another secret is refused",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{ocBase}}/peppol/inbound",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"peppol",
+								"inbound"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{inboundBody}}"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// The notification body is fixed once per run, and signed the way the Access Point signs it:",
+									"// X-OpenConnector-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of '<t>.<raw body>' with the shared secret>.",
+									"const body = pm.collectionVariables.get('inboundBody');",
+									"const t = Math.floor(Date.now() / 1000).toString();",
+									"const key = 'not-the-shared-secret';",
+									"const v1 = CryptoJS.HmacSHA256(t + '.' + body, key).toString(CryptoJS.enc.Hex);",
+									"pm.request.headers.upsert({ key: 'X-OpenConnector-Signature', value: 't=' + t + ',v1=' + v1 });",
+									"// No session: the webhook is public and must stand on its signature alone.",
+									"pm.cookies.jar().clear(pm.environment.get('base_url'), () => {});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. A signed inbound document",
+			"item": [
+				{
+					"name": "PI.5 a signed notification is received",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{ocBase}}/peppol/inbound",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"peppol",
+								"inbound"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{inboundBody}}"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// The notification body is fixed once per run, and signed the way the Access Point signs it:",
+									"// X-OpenConnector-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of '<t>.<raw body>' with the shared secret>.",
+									"const body = pm.collectionVariables.get('inboundBody');",
+									"const t = Math.floor(Date.now() / 1000).toString();",
+									"const key = pm.collectionVariables.get('peppolSecret');",
+									"const v1 = CryptoJS.HmacSHA256(t + '.' + body, key).toString(CryptoJS.enc.Hex);",
+									"pm.request.headers.upsert({ key: 'X-OpenConnector-Signature', value: 't=' + t + ',v1=' + v1 });",
+									"// No session: the webhook is public and must stand on its signature alone.",
+									"pm.cookies.jar().clear(pm.environment.get('base_url'), () => {});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"pm.test('received', () => pm.expect(pm.response.json().received).to.eql(true));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.6 the document is stored, with its UBL as a file",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{orBase}}/peppol_inbound_document?accessPointReference={{peppolReference}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"peppol_inbound_document?accessPointReference={{peppolReference}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"const rows = pm.response.json().results || [];",
+									"pm.test('one document for the reference', () => pm.expect(rows.length).to.eql(1));",
+									"const d = rows[0] || {};",
+									"pm.collectionVariables.set('inboundUuid', d.id || d.uuid || (d['@self'] && d['@self'].id));",
+									"pm.test('stored, with no detail', () => { pm.expect(d.status).to.eql('stored'); pm.expect(d.detail || null).to.eql(null); });",
+									"pm.test('sender and type kept', () => { pm.expect(d.senderPeppolId).to.eql('0106:12345678'); pm.expect(d.documentType).to.include('Invoice-2'); });",
+									"pm.test('a file id and name', () => { pm.expect(d.fileId).to.be.a('number'); pm.expect(d.fileName).to.match(/^peppol-inbound-.*\\.xml$/); });",
+									"pm.collectionVariables.set('inboundFileName', d.fileName || '');"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.7 the file is on the object",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{orBase}}/peppol_inbound_document/{{inboundUuid}}/files",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"peppol_inbound_document",
+								"{{inboundUuid}}",
+								"files"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"pm.test('the stored UBL is listed', () => pm.expect(pm.response.text()).to.include(pm.collectionVariables.get('inboundFileName')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.8 a redelivery of a stored document changes nothing",
+					"request": {
+						"method": "POST",
+						"url": {
+							"raw": "{{ocBase}}/peppol/inbound",
+							"host": [
+								"{{ocBase}}"
+							],
+							"path": [
+								"peppol",
+								"inbound"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{inboundBody}}"
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// The notification body is fixed once per run, and signed the way the Access Point signs it:",
+									"// X-OpenConnector-Signature: t=<unix time>,v1=<hex HMAC-SHA256 of '<t>.<raw body>' with the shared secret>.",
+									"const body = pm.collectionVariables.get('inboundBody');",
+									"const t = Math.floor(Date.now() / 1000).toString();",
+									"const key = pm.collectionVariables.get('peppolSecret');",
+									"const v1 = CryptoJS.HmacSHA256(t + '.' + body, key).toString(CryptoJS.enc.Hex);",
+									"pm.request.headers.upsert({ key: 'X-OpenConnector-Signature', value: 't=' + t + ',v1=' + v1 });",
+									"// No session: the webhook is public and must stand on its signature alone.",
+									"pm.cookies.jar().clear(pm.environment.get('base_url'), () => {});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.9 still one document for the reference",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{orBase}}/peppol_inbound_document?accessPointReference={{peppolReference}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"peppol_inbound_document?accessPointReference={{peppolReference}}"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rows = pm.response.json().results || [];",
+									"pm.test('one document, still stored', () => { pm.expect(rows.length).to.eql(1); pm.expect(rows[0].status).to.eql('stored'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.10 one inbound event names the stored object and its file",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{orBase}}/event?type=nl.conduction.peppol.inbound.received&_limit=200",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"event?type=nl.conduction.peppol.inbound.received&_limit=200"
+							]
+						},
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						]
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('200', () => pm.response.to.have.status(200));",
+									"const ref = 'integriq/peppol_inbound_document/' + pm.collectionVariables.get('inboundUuid');",
+									"const mine = (pm.response.json().results || []).filter(e => (e.data || {}).payloadReference === ref);",
+									"pm.test('exactly one event, also after the redelivery', () => pm.expect(mine.length).to.eql(1));",
+									"const evData = (mine[0] || {}).data || {};",
+									"pm.test('the file id and name of the stored UBL', () => { pm.expect(evData.payloadFileId).to.be.a('number'); pm.expect(evData.payloadFileName).to.eql(pm.collectionVariables.get('inboundFileName')); });",
+									"pm.test('the sender', () => pm.expect(evData.senderPeppolId).to.eql('0106:12345678'));",
+									"pm.collectionVariables.set('inboundEventUuid', (mine[0] || {}).id || '');"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "9. Teardown (via OpenRegister)",
+			"item": [
+				{
+					"name": "PI.11 cleanup — DELETE the inbound event",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/event/{{inboundEventUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"event",
+								"{{inboundEventUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.12 cleanup — DELETE the inbound document",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/peppol_inbound_document/{{inboundUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"peppol_inbound_document",
+								"{{inboundUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.13 cleanup — DELETE the consumer",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/consumer/{{peppolConsumerUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"consumer",
+								"{{peppolConsumerUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PI.14 cleanup — DELETE the source",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{orBase}}/source/{{peppolSourceUuid}}",
+							"host": [
+								"{{orBase}}"
+							],
+							"path": [
+								"source",
+								"{{peppolSourceUuid}}"
+							]
+						},
+						"header": []
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect([200, 204]).to.include(pm.response.code));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

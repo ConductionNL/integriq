@@ -37,7 +37,8 @@ Kind: code. Size M. Halves for shillinq `receivables-payment-links` and `receiva
   - GIVEN a Mollie source with one terminal WHEN a command asks for method `pointofsale` on that terminal THEN a payment is created without a checkout URL and the result says so
   - GIVEN the `log` provider WHEN the same command is dispatched THEN the refusal code is `unsupported`
 - [x] Implement
-- [ ] Test (PHPUnit; Newman for the terminal list route, including a 403 for a user without `payments.create`)
+- [x] Test (PHPUnit; Newman for the terminal list route, including a 403 for a user without `payments.create`)
+  > 2026-11-25, live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 292aa09d): Newman `tests/postman/integriq-payment-terminals.postman_collection.json` 11/11, two runs in a row. An administrator gets `{"terminals": []}` from a `log` source, an unknown source answers 404 `not_found`, a signed-in user without `payments.create` answers 403 ("Action 'payments.create' requires admin rights") with no terminals, and an anonymous call answers 401. PHPUnit `--filter Payment` 104/104, exit 0. On a `mollie` source the live run found that OpenRegister's broker refused `GET /v2/terminals`, `/v2/profiles/me` and `/v2/settlements` ("no allow-rule matches"), so the terminal list, the key check and the settlement pull could not work on any instance. Fixed in openregister#11310, which adds six read-only rules. With it applied, the calls reach api.mollie.com, which answers the dummy key with its own 400. A real terminal list needs a Mollie key and stays with task 1's Mollie dispatch.
 
 ### Task 5: Seed, docs and strings
 - **spec_ref**: `openspec/changes/messaging-payment-command-settlements-and-point-of-sale/specs/live-payment-providers/spec.md#requirement-every-provider-settlement-is-reported-once-with-its-transactions-req-lpp-008`

@@ -42,8 +42,8 @@ class CatalogiBindingTest extends TestCase {
 		'domein' => 'WOO',
 		'rsin' => '002220647',
 		'naam' => 'Documenttypen',
-		'register' => 'documents',
-		'schema' => 'documentType',
+		'typesRegister' => 'documents',
+		'typesSchema' => 'documentType',
 		'clients' => [['clientId' => 'dms', 'scopes' => ['catalogi.lezen'], 'concepts' => true], 'not-a-client'],
 	];
 
@@ -56,9 +56,29 @@ class CatalogiBindingTest extends TestCase {
 		$exists = static fn (): bool => true;
 
 		self::assertNull(CatalogiBinding::resolve(rows: [], schemaExists: $exists));
-		self::assertNull(CatalogiBinding::resolve(rows: [['register' => 'documents', 'schema' => 'documentType']], schemaExists: $exists), 'no published uuid');
-		self::assertNull(CatalogiBinding::resolve(rows: [['publishedUuid' => 'x', 'register' => 'documents']], schemaExists: $exists), 'no schema');
+		self::assertNull(CatalogiBinding::resolve(rows: [['typesRegister' => 'documents', 'typesSchema' => 'documentType']], schemaExists: $exists), 'no published uuid');
+		self::assertNull(CatalogiBinding::resolve(rows: [['publishedUuid' => 'x', 'typesRegister' => 'documents']], schemaExists: $exists), 'no schema');
 	}//end testNoBindingResolvesToNull()
+
+	/**
+	 * A row stored under the former `register` and `schema` names still binds;
+	 * the typesRegister and typesSchema names win when both are present.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/zgw-catalogi-served/specs/zgw-catalogi-facade/spec.md#requirement-integriq-serves-catalogussen-and-informatieobjecttypen-read-only-req-zcs-001
+	 */
+	public function testTheFormerFieldNamesAreStillRead(): void {
+		$legacy = CatalogiBinding::fromObject(row: ['publishedUuid' => 'x', 'register' => 'documents', 'schema' => 'documentType']);
+		self::assertNotNull($legacy);
+		self::assertSame('documents', $legacy->register);
+		self::assertSame('documentType', $legacy->schema);
+
+		$both = CatalogiBinding::fromObject(row: ['publishedUuid' => 'x', 'typesRegister' => 'new-reg', 'typesSchema' => 'new-type', 'register' => 'old', 'schema' => 'old']);
+		self::assertNotNull($both);
+		self::assertSame('new-reg', $both->register);
+		self::assertSame('new-type', $both->schema);
+	}//end testTheFormerFieldNamesAreStillRead()
 
 	/**
 	 * A binding whose schema does not resolve is no binding.

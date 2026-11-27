@@ -27,6 +27,9 @@ import { APP_BASE } from './spec-coverage/_helpers.ts'
 const OR_BASE = '/index.php/apps/openregister/api/objects/integriq'
 const RUN = Date.now().toString(36)
 
+/** The header that lets a cookie-session API call past Nextcloud's CSRF check (412 without it). */
+const OCS = { 'OCS-APIRequest': 'true' }
+
 /**
  * Seed one consumer with no credentials.
  *
@@ -35,6 +38,7 @@ const RUN = Date.now().toString(36)
  */
 async function seedConsumer(request: APIRequestContext): Promise<string> {
 	const resp = await request.post(`${OR_BASE}/consumer`, {
+		headers: OCS,
 		failOnStatusCode: false,
 		data: {
 			name: `E2E credentials ${RUN}`,
@@ -57,7 +61,8 @@ async function seedConsumer(request: APIRequestContext): Promise<string> {
  * @return The key as shown once.
  */
 async function generateKey(page: Page, label: string): Promise<string> {
-	await page.getByTestId('credential-key-label').locator('input').fill(label)
+	// The test id sits on the input itself (NcTextField passes it through).
+	await page.getByTestId('credential-key-label').fill(label)
 	await page.getByTestId('credential-generate-key').click()
 
 	const shown = page.getByTestId('credential-new-key')
@@ -79,7 +84,7 @@ test.describe('consumer credentials', () => {
 
 	test.afterEach(async ({ request }) => {
 		if (consumerId !== '') {
-			await request.delete(`${OR_BASE}/consumer/${consumerId}`, { failOnStatusCode: false })
+			await request.delete(`${OR_BASE}/consumer/${consumerId}`, { headers: OCS, failOnStatusCode: false })
 		}
 	})
 
@@ -95,7 +100,7 @@ test.describe('consumer credentials', () => {
 		await expect(page.getByTestId('credential-copy-key')).toContainText(/Copied/i)
 
 		// No route answers the key again: the list carries the prefix, never the key.
-		const list = await page.request.get(`${APP_BASE}/api/consumers/${consumerId}/credentials`)
+		const list = await page.request.get(`${APP_BASE}/api/consumers/${consumerId}/credentials`, { headers: OCS })
 		expect(list.status()).toBe(200)
 		expect(await list.text(), 'the credentials list never contains the key').not.toContain(key)
 

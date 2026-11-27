@@ -20,10 +20,18 @@
 			:disabled="running"
 			data-testid="admin-woo-starter-set-run"
 			@click="run">
-			{{ running ? t('integriq', 'Creating the document types…') : t('integriq', 'Create the Woo starter set') }}
+			{{
+				running
+					? t('integriq', 'Creating the document types…')
+					: t('integriq', 'Create the Woo starter set')
+			}}
 		</NcButton>
 
-		<p v-if="result" class="integriq-admin__hint" role="status" data-testid="admin-woo-starter-set-result">
+		<p
+			v-if="result"
+			class="integriq-admin__hint"
+			role="status"
+			data-testid="admin-woo-starter-set-result">
 			{{
 				t('integriq', 'Created: {created}. Already present: {skipped}.', {
 					created: result.created,
@@ -98,10 +106,16 @@ export default {
 		 */
 		refusal(code) {
 			if (code === 'tooi-scheme-missing') {
-				return this.t('integriq', 'The list of Woo information categories cannot be read. Nothing was created.')
+				return this.t(
+					'integriq',
+					'The list of Woo information categories cannot be read. Nothing was created.',
+				)
 			}
 			if (code === 'catalogue-not-configured') {
-				return this.t('integriq', 'No catalogue is configured yet. Set one up first.')
+				return this.t(
+					'integriq',
+					'No catalogue is configured yet. Set one up first.',
+				)
 			}
 			return this.t('integriq', 'The Woo starter set could not be created.')
 		},

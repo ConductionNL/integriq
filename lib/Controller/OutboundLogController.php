@@ -20,7 +20,7 @@
  *
  * @link https://www.integriq.nl
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md
+ * @spec openspec/specs/outbound-message-log/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use OCP\IUserSession;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
+ * @spec openspec/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
  */
 class OutboundLogController extends Controller {
 
@@ -103,7 +103,7 @@ class OutboundLogController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-the-sent-message-and-its-real-recipients-are-readable-behind-their-own-permission-req-ocl-002
 	 */
 	#[NoAdminRequired]
 	public function body(string $id): JSONResponse {
@@ -131,7 +131,7 @@ class OutboundLogController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-failed-send-is-retried-from-the-screen-and-the-retry-is-recorded-req-ocl-003
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-a-failed-send-is-retried-from-the-screen-and-the-retry-is-recorded-req-ocl-003
 	 */
 	#[NoAdminRequired]
 	public function retry(string $id = ''): JSONResponse {
@@ -173,7 +173,7 @@ class OutboundLogController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-a-message-is-forwarded-onward-and-the-forwarding-is-a-record-req-ocl-004
 	 */
 	#[NoAdminRequired]
 	public function forward(string $id): JSONResponse {
@@ -228,7 +228,7 @@ class OutboundLogController extends Controller {
 	 *   caller only sees messages they may read. The controller takes the interface, which this
 	 *   checker cannot follow to the class.
 	 *
-	 * @spec openspec/changes/outbound-communication-log/specs/outbound-message-log/spec.md#requirement-the-log-answers-when-a-recipient-was-last-told-anything-req-ocl-006
+	 * @spec openspec/specs/outbound-message-log/spec.md#requirement-the-log-answers-when-a-recipient-was-last-told-anything-req-ocl-006
 	 */
 	#[NoAdminRequired]
 	public function lastContact(): JSONResponse {

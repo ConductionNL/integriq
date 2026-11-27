@@ -1,0 +1,837 @@
+{
+  "info": {
+    "_postman_id": "integriq-idp-broker-2026-11-26",
+    "name": "Integriq — identity-provider registrations (portal-idp-broker-config)",
+    "description": "Newman test of task 12 of openspec/changes/portal-idp-broker-config: each organisation's SP/RP metadata is published at its own address (REQ-IDPC-003): an OIDC client 200, an unreadable SAML certificate 503 without naming the credential, a disabled or unknown registration 404. Only an administrator lists, tests, creates, reads or changes an idpRegistration (REQ-IDPC-008); a plain user and an anonymous caller are refused. Yivi is saved only as OIDC. Not here: the SAML and OIDC login round trips through stub identity providers. In this build every start and callback is refused before a live adapter is reached (see tests/e2e/idp-assurance-floor.spec.ts), so a round trip cannot pass until a live adapter is bound; that half of the task stays open.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Nextcloud's CSRF check refuses a basic-auth call that also carries the session cookie Newman keeps.",
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "ocBase",
+      "value": "{{base_url}}/index.php/apps/integriq/api"
+    },
+    {
+      "key": "orBase",
+      "value": "{{base_url}}/index.php/apps/openregister/api/objects/integriq"
+    },
+    {
+      "key": "idpOrg",
+      "value": ""
+    },
+    {
+      "key": "idpUser",
+      "value": ""
+    },
+    {
+      "key": "idpUserPassword",
+      "value": ""
+    },
+    {
+      "key": "idpOidcUuid",
+      "value": ""
+    },
+    {
+      "key": "idpSamlUuid",
+      "value": ""
+    },
+    {
+      "key": "idpDisabledUuid",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup (via OpenRegister and the provisioning API)",
+      "item": [
+        {
+          "name": "IB.0 a fresh organisation and a plain user for this run",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/ocs/v1.php/cloud/users?format=json",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userid\": \"{{idpUser}}\", \"password\": \"{{idpUserPassword}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fresh names per run, so nothing an earlier run left behind can answer for this one.",
+                  "const run = Date.now() + '-' + Math.random().toString(36).slice(2, 8);",
+                  "// The organisation is a uuid (the schema's format); a fresh one per run.",
+                  "pm.collectionVariables.set('idpOrg', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.collectionVariables.set('idpUser', 'newman-idp-user-' + run);",
+                  "pm.collectionVariables.set('idpUserPassword', 'Nm-' + run + '-Pw!x9');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('user created', () => pm.expect(pm.response.code).to.equal(200));",
+                  "pm.test('OCS ok', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.equal(100));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.1 an enabled OIDC registration (client_secret_basic, so no credential is read)",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/idpRegistration",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"organisation\": \"{{idpOrg}}\", \"provider\": \"eherkenning\", \"kind\": \"oidc-rp\", \"enabled\": true, \"label\": \"newman idp-broker oidc-rp\", \"issuer\": \"https://idp.invalid/newman\", \"clientId\": \"newman-client\", \"clientAuth\": \"client_secret_basic\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('idpOidcUuid', b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || '');",
+                  "pm.test('has an id', () => pm.expect(pm.collectionVariables.get('idpOidcUuid')).to.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.2 an enabled SAML registration whose signing credential does not exist",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/idpRegistration",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"organisation\": \"{{idpOrg}}\", \"provider\": \"digid\", \"kind\": \"saml-sp\", \"enabled\": true, \"label\": \"newman idp-broker saml-sp\", \"idpMetadataUrl\": \"https://idp.invalid/newman/metadata\", \"credentials\": {\"signing\": \"newman-missing-credential\"}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('idpSamlUuid', b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || '');",
+                  "pm.test('has an id', () => pm.expect(pm.collectionVariables.get('idpSamlUuid')).to.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.3 a disabled SAML registration",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/idpRegistration",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"organisation\": \"{{idpOrg}}\", \"provider\": \"eidas\", \"kind\": \"saml-sp\", \"enabled\": false, \"label\": \"newman idp-broker saml-sp\", \"idpMetadataUrl\": \"https://idp.invalid/newman/metadata\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('idpDisabledUuid', b.uuid || b.id || (b['@self'] && (b['@self'].uuid || b['@self'].id)) || '');",
+                  "pm.test('has an id', () => pm.expect(pm.collectionVariables.get('idpDisabledUuid')).to.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Metadata is published per organisation and provider (REQ-IDPC-003)",
+      "item": [
+        {
+          "name": "IB.10 OIDC client metadata answers 200 with the client and its callback",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/metadata/{{idpOrg}}/eherkenning",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('the client id', () => pm.expect(b.client_id).to.equal('newman-client'));",
+                  "pm.test('the auth method', () => pm.expect(b.token_endpoint_auth_method).to.equal('client_secret_basic'));",
+                  "pm.test('a callback for the provider', () => pm.expect(b.redirect_uris[0]).to.include('/idp/eherkenning/callback'));",
+                  "pm.test('no jwks_uri for a secret-based client', () => pm.expect(b).to.not.have.property('jwks_uri'));",
+                  "pm.test('no secret in the document', () => pm.expect(pm.response.text()).to.not.match(/secret\"\\s*:/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.11 the JWKS of a secret-based client is not published: 404",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/jwks/{{idpOrg}}/eherkenning",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not published: 404, or 429 once misses are throttled', () => pm.expect([404, 429]).to.include(pm.response.code));",
+                  "pm.test('no document', () => pm.expect(pm.response.text()).to.not.match(/client_id|EntityDescriptor|\"keys\"/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.12 SAML metadata whose certificate cannot be read answers 503, naming no credential",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/metadata/{{idpOrg}}/digid",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('503', () => pm.expect(pm.response.code).to.equal(503));",
+                  "pm.test('the generic message', () => pm.expect(pm.response.json().message).to.equal('The metadata is temporarily unavailable'));",
+                  "pm.test('the credential reference stays inside', () => pm.expect(pm.response.text()).to.not.include('newman-missing-credential'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.13 a disabled registration answers 404",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/metadata/{{idpOrg}}/eidas",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not published: 404, or 429 once misses are throttled', () => pm.expect([404, 429]).to.include(pm.response.code));",
+                  "pm.test('no document', () => pm.expect(pm.response.text()).to.not.match(/client_id|EntityDescriptor|\"keys\"/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.14 an organisation without a registration answers 404",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/metadata/00000000-0000-4000-8000-000000000000/digid",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not published: 404, or 429 once misses are throttled', () => pm.expect([404, 429]).to.include(pm.response.code));",
+                  "pm.test('no document', () => pm.expect(pm.response.text()).to.not.match(/client_id|EntityDescriptor|\"keys\"/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.15 an unknown provider answers 404",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/metadata/{{idpOrg}}/no-such-provider",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not published: 404, or 429 once misses are throttled', () => pm.expect([404, 429]).to.include(pm.response.code));",
+                  "pm.test('no document', () => pm.expect(pm.response.text()).to.not.match(/client_id|EntityDescriptor|\"keys\"/));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Only an administrator configures registrations (RBAC on idpRegistration, REQ-IDPC-008)",
+      "item": [
+        {
+          "name": "IB.20 the administrator lists the registrations with their status",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/registrations",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const rows = pm.response.json().registrations || [];",
+                  "const ours = rows.filter(r => r.organisation === pm.collectionVariables.get('idpOrg'));",
+                  "pm.test('all three of this run are listed', () => pm.expect(ours.length).to.equal(3));",
+                  "const saml = ours.find(r => r.provider === 'digid');",
+                  "pm.test('each row has a status and a metadata address', () => { pm.expect(saml.status).to.be.a('string'); pm.expect(saml.metadataUrl).to.include('/idp/metadata/'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.21 Test on the SAML registration names the signing credential check and returns no value",
+          "request": {
+            "method": "POST",
+            "url": "{{ocBase}}/idp/registrations/{{idpSamlUuid}}/test",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('checks are listed', () => pm.expect(b.checks).to.be.an('array').that.is.not.empty);",
+                  "pm.test('the credential reference is not echoed as a value', () => pm.expect(JSON.stringify(b.checks)).to.not.match(/BEGIN (CERTIFICATE|PRIVATE KEY)/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.22 Test on an unknown id answers 404",
+          "request": {
+            "method": "POST",
+            "url": "{{ocBase}}/idp/registrations/00000000-0000-4000-8000-000000000000/test",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.expect(pm.response.code).to.equal(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.23 a signed-in user who is no administrator cannot list them",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/registrations",
+            "header": [],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{idpUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{idpUserPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.expect([401, 403]).to.include(pm.response.code));",
+                  "pm.test('no registration in the answer', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('idpOrg')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.24 nor run Test",
+          "request": {
+            "method": "POST",
+            "url": "{{ocBase}}/idp/registrations/{{idpSamlUuid}}/test",
+            "header": [],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{idpUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{idpUserPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.expect([401, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.25 nor create a registration in the object store",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/idpRegistration",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"organisation\": \"{{idpOrg}}\", \"provider\": \"eidas\", \"kind\": \"oidc-rp\", \"enabled\": true, \"label\": \"newman idp-broker oidc-rp\", \"issuer\": \"https://idp.invalid/x\", \"clientId\": \"x\", \"clientAuth\": \"client_secret_basic\"}"
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{idpUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{idpUserPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.expect([401, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.26 nor read one",
+          "request": {
+            "method": "GET",
+            "url": "{{orBase}}/idpRegistration/{{idpSamlUuid}}",
+            "header": [],
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{idpUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{idpUserPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused or hidden', () => pm.expect([401, 403, 404]).to.include(pm.response.code));",
+                  "pm.test('no registration data', () => pm.expect(pm.response.text()).to.not.include('newman-missing-credential'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.27 nor change one",
+          "request": {
+            "method": "PUT",
+            "url": "{{orBase}}/idpRegistration/{{idpSamlUuid}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"organisation\": \"{{idpOrg}}\", \"provider\": \"digid\", \"kind\": \"saml-sp\", \"enabled\": false, \"label\": \"newman idp-broker saml-sp\", \"idpMetadataUrl\": \"https://idp.invalid/changed\"}"
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{idpUser}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{idpUserPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused or hidden', () => pm.expect([401, 403, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.28 and the registration is unchanged",
+          "request": {
+            "method": "GET",
+            "url": "{{orBase}}/idpRegistration/{{idpSamlUuid}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "pm.test('still enabled, metadata address unchanged', () => { const b = pm.response.json(); pm.expect(b.enabled).to.equal(true); pm.expect(b.idpMetadataUrl).to.equal('https://idp.invalid/newman/metadata'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.29 anonymous callers cannot list them",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/registrations",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused', () => pm.expect([401, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.30 Yivi is saved only as OIDC: a SAML Yivi registration is refused with the reason",
+          "request": {
+            "method": "POST",
+            "url": "{{orBase}}/idpRegistration",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"organisation\": \"{{idpOrg}}\", \"provider\": \"yivi\", \"kind\": \"saml-sp\", \"enabled\": true, \"label\": \"newman idp-broker saml-sp\", \"idpMetadataUrl\": \"https://idp.invalid/yivi\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// IdpRegistrationSaveCheck refuses with 400; OpenRegister answers a save-hook refusal as 422.",
+                  "pm.test('refused as invalid', () => pm.expect([400, 422]).to.include(pm.response.code));",
+                  "pm.test('names the OIDC bridge', () => pm.expect(pm.response.text()).to.include('OIDC'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Teardown",
+      "item": [
+        {
+          "name": "IB.90 delete the OIDC registration",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/idpRegistration/{{idpOidcUuid}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.91 delete the SAML registration",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/idpRegistration/{{idpSamlUuid}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.92 delete the disabled registration",
+          "request": {
+            "method": "DELETE",
+            "url": "{{orBase}}/idpRegistration/{{idpDisabledUuid}}",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.93 delete the plain user",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/ocs/v1.php/cloud/users/{{idpUser}}?format=json",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('deleted', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IB.94 after delete the metadata answers 404",
+          "request": {
+            "method": "GET",
+            "url": "{{ocBase}}/idp/metadata/{{idpOrg}}/eherkenning",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not published: 404, or 429 once misses are throttled', () => pm.expect([404, 429]).to.include(pm.response.code));",
+                  "pm.test('no document', () => pm.expect(pm.response.text()).to.not.match(/client_id|EntityDescriptor|\"keys\"/));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

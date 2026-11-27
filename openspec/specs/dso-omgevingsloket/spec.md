@@ -70,8 +70,8 @@ The adapter MUST support receiving meldingen (notifications of activities not re
 - **THEN** it creates a melding-zaak for the meldingsplichtige activiteit and flags the vergunningplichtige activiteit for separate aanvraag handling
 
 #### Scenario: Melding bijlagen stored in Files
-- **WHEN** a melding contains bijlagen (asbestinventarisatierapport) and the adapter processes the melding
-- **THEN** bijlagen are downloaded from DSO-LV and stored in a dedicated Nextcloud Files folder linked to the melding-zaak
+- **WHEN** a melding contains bijlagen (asbestinventarisatierapport) and the background job runs
+- **THEN** the bijlagen are downloaded from DSO-LV and attached as files to the melding's `dso_verzoek` object, as REQ-DSO-005 describes
 
 ### Requirement: Informatieverzoek and Vooroverleg Support (REQ-DSO-003)
 
@@ -119,21 +119,37 @@ The adapter MUST parse the DSO-verzoek XML/JSON payload into structured data inc
 
 ### Requirement: Bijlagen Download and Storage (REQ-DSO-005)
 
-The adapter MUST download bijlagen (documenten, tekeningen, rapporten, berekeningen) referenced in the DSO-verzoek from DSO-LV and store them in Nextcloud Files. Each bijlage is stored in a zaak-specific folder structure following the pattern `/DSO-verzoeken/{year}/{verzoekId}/bijlagen/`.
+The adapter MUST download every bijlage a DSO-verzoek references from DSO-LV in a background job after intake, and MUST attach each one as a file to the request's `dso_verzoek` object through OpenRegister, stored in Nextcloud Files under the object's access rights. It MUST record each bijlage's outcome on the request, and MUST NOT write a bijlage anywhere outside Nextcloud Files.
 
 @e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
 
 #### Scenario: Multiple bijlagen downloaded and linked
-- **WHEN** a verzoek references 5 bijlagen including PDFs, DWG drawings, and a structural calculation and the adapter processes the verzoek
-- **THEN** each bijlage is downloaded via the DSO-LV document API using mTLS, stored in the zaak folder, and linked to the zaak via Docudesk
+- **WHEN** a verzoek references 5 bijlagen including PDFs, DWG drawings, and a structural calculation and the background job runs
+- **THEN** each bijlage is downloaded via the DSO-LV document API with the source's authentication (mTLS in production)
+- **AND** each is attached to the request object as a file tagged `dso-bijlage`
+- **AND** each entry in the request's `attachments` has status `stored` and the stored file's id
+
+#### Scenario: The endpoint does not wait for the bijlagen
+- **WHEN** DSO-LV pushes a verzoek with bijlagen to the STAM endpoint
+- **THEN** the endpoint answers 202 once the request is saved
+- **AND** every entry in the request's `attachments` has status `pending` until the job has run
 
 #### Scenario: Bijlage download retried and flagged on failure
-- **WHEN** a bijlage download fails due to a network timeout and the adapter retries (up to 3 attempts with exponential backoff)
-- **THEN** on persistent failure the zaak is created with a "bijlage ontbreekt" warning and a notification is sent to the behandelaar
+- **WHEN** a bijlage download fails due to a network timeout and the job retries (up to 3 attempts with exponential backoff)
+- **THEN** on persistent failure its entry has status `failed` with the last error, and the request is flagged "bijlage ontbreekt" for the behandelaar
 
 #### Scenario: Oversized bijlage rejected
 - **WHEN** a bijlage exceeds the configured maximum file size (default: 100MB) and the download is attempted
-- **THEN** the adapter rejects the file, stores a placeholder reference, and flags the zaak for manual bijlage handling
+- **THEN** no file is stored, its entry has status `too-large`, and the request is flagged for manual bijlage handling
+
+#### Scenario: Nothing is written outside Nextcloud Files
+- **WHEN** any verzoek with bijlagen is processed
+- **THEN** no file is created on the server's filesystem outside Nextcloud's data, and no path such as `/DSO-verzoeken` exists afterwards
+
+#### Scenario: A rerun finishes what a crash left
+- **GIVEN** the job stopped after storing 2 of 5 bijlagen
+- **WHEN** the job runs again
+- **THEN** it downloads only the 3 entries that are not `stored`, and stores no duplicate of the first 2
 
 ### Requirement: Verzoek Schema Validation (REQ-DSO-006)
 
@@ -217,13 +233,13 @@ The adapter MUST handle unmapped activiteiten gracefully: creating a zaak with a
 
 ### Requirement: Automatic Zaak Creation (REQ-DSO-020)
 
-The adapter MUST automatically create a zaak in Procest for each received DSO-verzoek. The zaak includes all parsed data: aanvrager mapped to the zaak (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum set to DSO-verzoek indieningsdatum, linked bijlagen, and the original DSO-verzoek reference (verzoekId, bronorganisatie).
+Each received DSO-verzoek that integriq has mapped MUST become exactly one zaak, created automatically by the case system from the mapped `dso_verzoek`. Integriq prepares the verzoek (parsed data, `mappedCaseTypes`, attachments) and MUST NOT create the zaak itself. The zaak MUST carry the parsed data and the original DSO-verzoek reference, as the first scenario lists.
 
-@e2e exclude backend DSO/Omgevingsloket STAM integration — covered by PHPUnit, not browser UI
+@e2e exclude backend DSO/Omgevingsloket STAM integration, covered by PHPUnit, not browser UI
 
 #### Scenario: Parsed vergunningaanvraag creates fully populated zaak
-- **WHEN** a valid vergunningaanvraag is received and parsed and the adapter creates the zaak in Procest
-- **THEN** the zaak has: zaaktype from the activiteiten-mapping, aanvrager from the verzoek, locatie with BAG-adres and geometrie, startdatum equal to indieningsdatum, all bijlagen linked, and verzoekId stored as external reference
+- **WHEN** a valid vergunningaanvraag is received, parsed and mapped, and the case system reads the mapped verzoek
+- **THEN** the zaak has: zaaktype from the activiteiten-mapping, aanvrager from the verzoek (BSN/KVK-nummer, naam, adres, contactgegevens), locatie (BAG-adres, kadastrale aanduiding, GML-geometrie), startdatum equal to indieningsdatum, all bijlagen linked, and verzoekId and bronorganisatie stored as external reference
 
 #### Scenario: KVK-registered bedrijf mapped to bedrijf fields
 - **WHEN** the verzoek aanvrager is a KVK-registered bedrijf and the zaak is created
@@ -458,3 +474,17 @@ The DSO connection settings in the Integriq admin section MUST let an administra
 - **WHEN** an administrator opens the DSO connection settings
 - **THEN** the section reads "No account set: DSO-LV pushes are refused with 503"
 - @e2e tests/e2e/dso-connection-settings.spec.ts
+
+### Requirement: No case handoff from a DSO verzoek (REQ-DSO-021)
+
+The `dso_verzoek` schema MUST declare no `x-openregister-handoff`, and integriq MUST expose no endpoint that hands a verzoek off to a case. A verzoek MUST NOT become a second zaak through integriq once the case system has made one.
+
+@e2e exclude backend schema declaration and route table; covered by DsoVerzoekDeclaresNoCaseHandoffTest and the live run, no browser surface
+
+#### Scenario: The retired handoff endpoint is called
+- **WHEN** a signed-in user posts to `/apps/integriq/api/dso/verzoeken/{id}/handoff`
+- **THEN** no route answers it and no zaak is created
+
+#### Scenario: OpenRegister lists the handoffs of a verzoek
+- **WHEN** a client asks OpenRegister for the handoffs of a `dso_verzoek`
+- **THEN** none is declared, so none can be executed

@@ -29,8 +29,8 @@
         "mapping": {
           "title": "{{ title }}",
           "date": "{{ (publishedDate|default('now'))|date('D, d M Y H:i:s', 'UTC') }} GMT",
-          "referencenumber": "{{ vacancyId }}",
-          "requisitionid": "{{ vacancyId }}",
+          "referencenumber": "{{ vacancyId|default(id|default('')) }}",
+          "requisitionid": "{{ vacancyId|default(id|default('')) }}",
           "url": "",
           "company": "",
           "sourcename": "",
@@ -44,7 +44,7 @@
         "unset": [],
         "cast": {},
         "passThrough": false,
-        "version": "1.0.0"
+        "version": "1.0.1"
       },
       {
         "@self": {

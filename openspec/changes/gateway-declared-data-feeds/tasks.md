@@ -12,6 +12,7 @@ Kind: code. Size M. Half for shillinq `reporting-data-delivery` (row shillinq `r
   - GIVEN a dataset naming a field its schema lacks WHEN integriq syncs THEN that feed is refused with the field named and the others are kept
 - [x] Implement
 - [x] Test (PHPUnit with a fixture app declaration)
+  > 2026-11-25, b-integriq: the live pass found `POST /api/feeds/sync` answering 500 once an app declares feeds: the product was created `active` and the API design check (REQ-ADRC-003) refused it. The product now starts as `draft` (new api_product status) and an administrator activates it after the design check; a re-sync keeps the status (`FeedDeclarationServiceTest::testANewProductIsDraftAndAnActivatedProductStaysActive`).
 
 ### Task 2: Serve a feed with paging and field selection
 - **spec_ref**: `openspec/changes/gateway-declared-data-feeds/specs/declared-data-feeds/spec.md#requirement-a-feed-answers-only-its-declared-fields-page-by-page-req-ddf-002`

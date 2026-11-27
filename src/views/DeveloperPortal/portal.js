@@ -8,7 +8,7 @@ import { translate as t } from '@nextcloud/l10n'
  *
  * @param {Array<object>} products The portal's products.
  * @return {Array<{id: string, label: string}>} The options.
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
  */
 export function productOptionsOf(products) {
 	return (products || []).map((product) => ({
@@ -22,7 +22,7 @@ export function productOptionsOf(products) {
  *
  * @param {object|undefined} product The product.
  * @return {Array<string>} The tier names.
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
  */
 export function tierNamesOf(product) {
 	const names = (product?.tiers || []).map((tier) => tier.name)
@@ -38,7 +38,7 @@ export function tierNamesOf(product) {
  *
  * @param {number} status The HTTP status of the answer.
  * @return {string} The message.
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-developer-requests-access-for-their-own-application-req-devp-002
  */
 export function requestOutcome(status) {
 	if (status === 202) {
@@ -52,7 +52,7 @@ export function requestOutcome(status) {
  *
  * @param {string} status The status.
  * @return {string} The label.
- * @spec openspec/changes/access-developer-portal-and-subscriptions/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
+ * @spec openspec/specs/api-product-gateway/spec.md#requirement-a-subscription-can-end-on-a-date-req-devp-005
  */
 export function subscriptionStatusLabel(status) {
 	const labels = {

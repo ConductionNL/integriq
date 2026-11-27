@@ -59,7 +59,8 @@ binding, handler or starter set exists.
   - GIVEN the admin page WHEN the starter set runs THEN the counts show and the types are listed
 - [x] Implement
   - 2026-11-24: `tests/postman/zgw-catalogi-served.postman_collection.json` written from the spec's scenarios: a client with `catalogi.lezen` lists informatieobjecttypen in the paged envelope, follows a type's `url` and its `catalogus` and gets the same resources (omschrijving, vertrouwelijkheidaanduiding, informatieobjectcategorie, beginGeldigheid, an empty `besluittypen`), filters on `catalogus`; the concept type stays hidden and answers 404 by uuid; a client whose binding entry lacks the scope gets 403 and no token 401; POST, PUT, PATCH and DELETE answer 405 and the count is unchanged after them. It stages its own register, schema, two HS256 JWT consumers and a `catalogi_binding`, stops at once when another binding already resolves, and deletes everything again. With the Playwright spec (#3771), the catalogue card and the docs, every file this task names is in place.
-- [ ] Test: Newman collection and Playwright spec above
+- [x] Test: Newman collection and Playwright spec above
+  - 2026-11-25 live (sandbox Nextcloud 34.0.6 + MariaDB, OpenRegister main 43ba16d9): Newman `zgw-catalogi-served` 33 requests, 61/61 assertions with openregister#11279 (60/61 on OpenRegister main alone: the reader consumer's HS256 secret came back in `@self.relations`, an OpenRegister bug fixed there); Playwright `zgw-catalogi-served.spec.ts` 1/1 (starter set: 16 created, 1 present, counts shown, types listed). Found and fixed on the way: the binding's `register`/`schema` are dropped by OpenRegister from every object body (now `typesRegister`/`typesSchema`, old names still read); the catalogue re-opened the token gate for its type list and the bridge refused the replayed jti (empty `informatieobjecttypen`); the starter set looked up the TOOI set URI while OpenRegister seeds the scheme as `tooi/def/thes/kern/`, and read the language-map `prefLabel` as "Array"; `createType` still used the removed `saveObject(register:, schema:)` form; Newman and Playwright linked the schema to the register by uuid, which a register never resolves.
   - Built: the catalogue card `adapter:catalogi-api` (`CatalogRegistryService::CATALOGI_DESCRIPTOR`, golden `tests/fixtures/catalog/static-descriptors.json`; this repository has no `lib/Settings/catalog.seed.json`, the cards are those static descriptors), and the Limits and connector-catalogue sections in `docs/features/zgw-catalogi.md`. The throttle was already on every route (`#[AnonRateLimit(limit: 600, period: 60)]` on `CatalogiApiController`).
   - Left: the Newman collection and the Playwright spec. Both need a running instance with an OpenRegister JWT consumer (issuer, HS256 secret of at least 32 bytes) and a `catalogi_binding` listing its client, so they are written and run in the live lane, not here.
 
@@ -67,11 +68,18 @@ binding, handler or starter set exists.
 
 The building agent follows `openspec/woo-build-rules.md`:
 
-- [ ] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
-- [ ] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
-- [ ] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
-- [ ] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`, `npm run check:register`.
+- [x] Own clone, `git checkout --no-track -b <branch> origin/development`, `TMPDIR` a sibling outside the clone.
+  - 2026-11-27 verification pass: own shallow clone of `development`, branch `cloud/b-integriq-verify-four-changes`, temporary files in a scratch directory outside the clone.
+- [x] PHPUnit judged by the `Tests:` line, or with `--no-coverage`; a green suite exits 1 without a coverage driver.
+  - 2026-11-27, read from the `Tests:` line, development and this branch: `development: Tests: 11129, Errors: 2, Failures: 3; branch: Tests: 11129, Errors: 2, Failures: 4`. The same failing set on both (JobsControllerTest, CallServiceTest, OriPublicEndpointsTest), plus on the branch run SynchronizationSynchronizeEntryGoldenTest, which is timing-dependent (`getSlowestInternship()` names no stage when every stage rounds to 0 ms) and fails on this machine with no PHP changed. None of it is in this change's tests.
+- [x] `run-hydra-gates.sh --base origin/development`, counting the gates that ran.
+  - 2026-11-27, through hydra `scripts/diff-check.sh --base origin/development`: 49 of 49 applicable gates ran. One finding, gate-119 procedure-code (16 procedure-named files against a baseline of 10), is a whole-tree count that development carries identically; the verification branch adds no file. units, floor, eslint and stylelint pass.
+- [x] Once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict`, `npm run lint`, `npm run format`, `npm run check:l10n`, `npm run check:l10n-js`, `npm run check:manifest`, `npm run check:schema-l10n`, `npm run check:register`.
+  - 2026-11-27: `check:strict` red on development and identically on the branch (phpcs warnings, phpmd, psalm and the PHPUnit set above; phpstan clean); `lint`, `check:l10n-js`, `check:manifest`, `check:register` pass; `format` passes for every file of this change after the verification branch formatted them (249 other files still fail, inherited); `check:l10n` fails on 152 unused keys and `check:schema-l10n` on 292 uncovered strings, none in this change's files.
 - [ ] CI runs the gates on the full tree; the coverage guard needs a test for every added statement.
+  - Open 2026-11-27: Code Quality is red on `development` itself (a6502e5: phpcs, phpmd, psalm, format, schema-l10n, Newman, hydra gates, unit tests), so this cannot be read as green for this change.
 - [x] `openspec validate zgw-catalogi-served --type change --strict` passes.
-- [ ] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
+- [x] One PR, `--base development`; merge `development` in, never rebase; no `Co-Authored-By` trailer.
+  - 2026-11-27, the verification pass: one PR, `--base development`, development merged in, no `Co-Authored-By` trailer.
 - [ ] Done means merged on `development` with CI green. Row 17.18 is `production` only once a store release carries it.
+  - Open 2026-11-27: the code is merged on `development`, CI on `development` is not green (see above).

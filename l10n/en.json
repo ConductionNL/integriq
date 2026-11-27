@@ -4650,7 +4650,8 @@
         "The message could not be assigned.": "The message could not be assigned.",
         "Pace: calls per window": "Pace: calls per window",
         "Pace: window (seconds)": "Pace: window (seconds)",
-        "Pace: burst": "Pace: burst"
+        "Pace: burst": "Pace: burst",
+        "The register that holds the document types. Named typesRegister because OpenRegister reserves `register` and `schema` as request keys and drops them from an object body.": "The register that holds the document types. Named typesRegister because OpenRegister reserves `register` and `schema` as request keys and drops them from an object body."
     },
     "plurals": {}
 }

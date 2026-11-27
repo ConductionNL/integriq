@@ -23,6 +23,7 @@ namespace OCA\Integriq\Tests\Unit\Service;
 use OCA\Integriq\Service\CallService;
 use OCA\Integriq\Service\EventService;
 use OCA\Integriq\Service\NotificatiesSubscriberService;
+use OCA\Integriq\Service\ActingUser;
 use OCA\Integriq\Service\SourceDestructionService;
 use OCA\Integriq\Service\SynchronizationService;
 use OCA\Integriq\Service\WebhookSignatureService;
@@ -639,9 +640,26 @@ class NotificatiesSubscriberServiceTest extends TestCase {
 			$this->urlGenerator,
 			$logger,
 			null,
-			new SourceDestructionService($objects, $engine, $logger)
+			new SourceDestructionService(
+				objectService: $objects,
+				engine: $engine,
+				logger: $logger,
+				actingUser: new ActingUser(userManager: $this->createMock(originalClassName: \OCP\IUserManager::class), userSession: $this->signedInSession())
+			)
 		);
 	}//end serviceWithDestruction()
+
+	/**
+	 * A session with a signed-in user, so the destruction path keeps the caller's identity.
+	 *
+	 * @return \OCP\IUserSession
+	 */
+	private function signedInSession(): \OCP\IUserSession {
+		$session = $this->createMock(originalClassName: \OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($this->createMock(originalClassName: \OCP\IUser::class));
+
+		return $session;
+	}//end signedInSession()
 
 	/**
 	 * A ZGW notification with actie destroy hands the document to the destruction path of the abonnement's source.

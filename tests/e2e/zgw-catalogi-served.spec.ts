@@ -82,8 +82,29 @@ const cleanup: string[] = []
  * @param request The request fixture.
  * @return The headers.
  */
-async function adminHeaders(request: APIRequestContext): Promise<Record<string, string>> {
+async function adminHeaders(
+	request: APIRequestContext,
+): Promise<Record<string, string>> {
 	return { 'OCS-APIRequest': 'true', ...(await withRequestToken(request)) }
+}
+
+/**
+ * The numeric id of something stored in OpenRegister.
+ *
+ * @param request The request context.
+ * @param path The stored item's path.
+ * @return The numeric id.
+ */
+async function numericId(request: APIRequestContext, path: string): Promise<number> {
+	const resp = await request.get(path, {
+		failOnStatusCode: false,
+		headers: await adminHeaders(request),
+	})
+	expect(resp.status(), `read ${path}`).toBe(200)
+	const id = Number((await resp.json()).id)
+	expect(Number.isInteger(id), `${path} has a numeric id`).toBe(true)
+
+	return id
 }
 
 /**
@@ -104,7 +125,10 @@ async function create(
 		headers: await adminHeaders(request),
 		data,
 	})
-	expect([200, 201], `create ${path}: ${(await resp.text()).slice(0, 300)}`).toContain(resp.status())
+	expect(
+		[200, 201],
+		`create ${path}: ${(await resp.text()).slice(0, 300)}`,
+	).toContain(resp.status())
 	const body = await resp.json()
 	const id = String(body.uuid ?? body.id ?? body['@self']?.id ?? '')
 	expect(id, `the created ${path} has an id`).not.toBe('')
@@ -119,7 +143,9 @@ async function create(
  * @param request The request fixture.
  * @return The stored objects.
  */
-async function storedTypes(request: APIRequestContext): Promise<Array<Record<string, any>>> {
+async function storedTypes(
+	request: APIRequestContext,
+): Promise<Array<Record<string, any>>> {
 	const resp = await request.get(`${OR_API}/objects/${REGISTER}/${SCHEMA}`, {
 		headers: await adminHeaders(request),
 		params: { _limit: 200 },
@@ -146,19 +172,24 @@ function idOf(row: Record<string, any>): string {
  * @return The token.
  */
 function zgwJwt(): string {
-	const b64url = (value: string): string => Buffer.from(value).toString('base64url')
+	const b64url = (value: string): string =>
+		Buffer.from(value).toString('base64url')
 	const now = Math.floor(Date.now() / 1000)
 	const head = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-	const body = b64url(JSON.stringify({
-		iss: CLIENT,
-		client_id: CLIENT,
-		sub: CLIENT,
-		iat: now,
-		nbf: now - 5,
-		exp: now + 300,
-		jti: `${RUN}-${randomUUID()}`,
-	}))
-	const signature = createHmac('sha256', SECRET).update(`${head}.${body}`).digest('base64url')
+	const body = b64url(
+		JSON.stringify({
+			iss: CLIENT,
+			client_id: CLIENT,
+			sub: CLIENT,
+			iat: now,
+			nbf: now - 5,
+			exp: now + 300,
+			jti: `${RUN}-${randomUUID()}`,
+		}),
+	)
+	const signature = createHmac('sha256', SECRET)
+		.update(`${head}.${body}`)
+		.digest('base64url')
 
 	return `${head}.${body}.${signature}`
 }
@@ -173,7 +204,8 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 		expect(existing.status(), await existing.text()).toBe(200)
 		const rows = ((await existing.json()).results ?? []) as unknown[]
 		if (rows.length > 0) {
-			skipReason = 'this instance already has a catalogi_binding; the starter set would write into that catalogue'
+			skipReason =
+				'this instance already has a catalogi_binding; the starter set would write into that catalogue'
 			return
 		}
 
@@ -191,7 +223,8 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 		await create(request, `${OR_API}/registers`, {
 			title: `E2E documenten ${RUN}`,
 			slug: REGISTER,
-			schemas: [schemaId],
+			// A register lists its schemas by numeric id; a uuid there is never resolved.
+			schemas: [await numericId(request, `${OR_API}/schemas/${schemaId}`)],
 		})
 		await create(request, `${OR_BASE}/consumer`, {
 			name: CLIENT,
@@ -205,9 +238,11 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 			rsin: '123456782',
 			naam: `E2E catalogus ${RUN}`,
 			publishedUuid: randomUUID(),
-			register: REGISTER,
-			schema: SCHEMA,
-			clients: [{ clientId: CLIENT, scopes: ['catalogi.lezen'], concepts: false }],
+			typesRegister: REGISTER,
+			typesSchema: SCHEMA,
+			clients: [
+				{ clientId: CLIENT, scopes: ['catalogi.lezen'], concepts: false },
+			],
 		})
 
 		// The staging run: one type per Woo category in the empty schema.
@@ -215,34 +250,57 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 			failOnStatusCode: false,
 			headers: await adminHeaders(request),
 		})
-		if (staged.status() === 409 && (await staged.json()).code === 'tooi-scheme-missing') {
-			skipReason = 'the TOOI informatiecategorie scheme is not in the concept register of this instance'
+		if (
+			staged.status() === 409
+			&& (await staged.json()).code === 'tooi-scheme-missing'
+		) {
+			skipReason =
+				'the TOOI informatiecategorie scheme is not in the concept register of this instance'
 			return
 		}
 		expect(staged.status(), await staged.text()).toBe(200)
-		expect(await staged.json(), 'nothing was there yet').toMatchObject({ skipped: 0 })
+		expect(await staged.json(), 'nothing was there yet').toMatchObject({
+			skipped: 0,
+		})
 
 		const types = await storedTypes(request)
 		categories = types.map((row) => String(row.category ?? ''))
 
 		// Keep one type, a "besluiten" one when the scheme has a label like it.
-		const keep = types.find((row) => /besluit/i.test(String(row.category ?? ''))) ?? types[0]
-		kept = { id: idOf(keep), name: String(keep.name ?? ''), category: String(keep.category ?? '') }
+		const keep =
+			types.find((row) => /besluit/i.test(String(row.category ?? '')))
+			?? types[0]
+		kept = {
+			id: idOf(keep),
+			name: String(keep.name ?? ''),
+			category: String(keep.category ?? ''),
+		}
 		const headers = await adminHeaders(request)
 		for (const row of types) {
 			if (idOf(row) !== kept.id) {
-				const gone = await request.delete(`${OR_API}/objects/${REGISTER}/${SCHEMA}/${idOf(row)}`, { headers, failOnStatusCode: false })
-				expect(gone.status(), 'a staged type is deleted again').toBeLessThan(300)
+				const gone = await request.delete(
+					`${OR_API}/objects/${REGISTER}/${SCHEMA}/${idOf(row)}`,
+					{ headers, failOnStatusCode: false },
+				)
+				expect(gone.status(), 'a staged type is deleted again').toBeLessThan(
+					300,
+				)
 			}
 		}
-		expect(await storedTypes(request), 'one type is left, in a Woo category').toHaveLength(1)
+		expect(
+			await storedTypes(request),
+			'one type is left, in a Woo category',
+		).toHaveLength(1)
 	})
 
 	test.afterAll(async ({ request }) => {
 		const headers = await adminHeaders(request)
 		if (cleanup.some((path) => path.startsWith(`${OR_API}/registers/`))) {
 			for (const row of await storedTypes(request).catch(() => [])) {
-				await request.delete(`${OR_API}/objects/${REGISTER}/${SCHEMA}/${idOf(row)}`, { headers, failOnStatusCode: false })
+				await request.delete(
+					`${OR_API}/objects/${REGISTER}/${SCHEMA}/${idOf(row)}`,
+					{ headers, failOnStatusCode: false },
+				)
 			}
 		}
 		for (const path of cleanup) {
@@ -251,19 +309,33 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 	})
 
 	// @e2e zgw-catalogi-facade::the-woo-categories-become-document-types
-	test('the administrator runs the starter set and every Woo category gets a document type', async ({ page, request }) => {
+	test('the administrator runs the starter set and every Woo category gets a document type', async ({
+		page,
+		request,
+	}) => {
 		test.skip(skipReason !== '', skipReason)
-		expect(categories, 'the TOOI scheme holds the Woo information categories').toHaveLength(WOO_CATEGORIES)
+		expect(
+			categories,
+			'the TOOI scheme holds the Woo information categories',
+		).toHaveLength(WOO_CATEGORIES)
 
 		await page.goto(ADMIN_SETTINGS_URL, { waitUntil: 'domcontentloaded' })
 		const section = page.getByTestId('admin-woo-starter-set')
-		await expect(section, 'the Woo starter set section is on the admin page').toBeVisible({ timeout: 30_000 })
+		await expect(
+			section,
+			'the Woo starter set section is on the admin page',
+		).toBeVisible({ timeout: 30_000 })
 
 		const ran = page.waitForResponse(
-			(resp) => resp.url().includes('/api/catalogi/woo-starter-set') && resp.request().method() === 'POST',
+			(resp) =>
+				resp.url().includes('/api/catalogi/woo-starter-set')
+				&& resp.request().method() === 'POST',
 		)
 		await section.getByTestId('admin-woo-starter-set-run').click()
-		expect((await ran).status(), 'the administrator may run the starter set').toBe(200)
+		expect(
+			(await ran).status(),
+			'the administrator may run the starter set',
+		).toBe(200)
 
 		await expect(
 			section.getByTestId('admin-woo-starter-set-result'),
@@ -278,16 +350,24 @@ test.describe('zgw-catalogi-served: the Woo starter set', () => {
 		expect(before?.category).toBe(kept.category)
 
 		// A Documenten API client lists them over the Catalogi API.
-		const client = await anonymousRequest({ Authorization: `Bearer ${zgwJwt()}` })
+		const client = await anonymousRequest({
+			Authorization: `Bearer ${zgwJwt()}`,
+		})
 		try {
-			const resp = await client.get(`${CATALOGI}/informatieobjecttypen`, { failOnStatusCode: false })
+			const resp = await client.get(`${CATALOGI}/informatieobjecttypen`, {
+				failOnStatusCode: false,
+			})
 			expect(resp.status(), await resp.text()).toBe(200)
 			const page1 = await resp.json()
 			expect(page1.count, 'one type per Woo category').toBe(WOO_CATEGORIES)
 			expect(page1.results).toHaveLength(WOO_CATEGORIES)
-			const listed = (page1.results as Array<{ informatieobjectcategorie: string }>)
-				.map((type) => type.informatieobjectcategorie)
-			expect([...listed].sort(), 'each type carries its own Woo category').toEqual([...categories].sort())
+			const listed = (
+				page1.results as Array<{ informatieobjectcategorie: string }>
+			).map((type) => type.informatieobjectcategorie)
+			expect(
+				[...listed].sort(),
+				'each type carries its own Woo category',
+			).toEqual([...categories].sort())
 		} finally {
 			await client.dispose()
 		}

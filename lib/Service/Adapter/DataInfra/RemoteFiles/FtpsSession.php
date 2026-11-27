@@ -63,12 +63,7 @@ final class FtpsSession implements RemoteFileSession {
 	 */
 	public static function parseMlsd(string $answer): array {
 		$entries = [];
-		$lines = preg_split('/\r?\n/', $answer);
-		if ($lines === false) {
-			return [];
-		}
-
-		foreach ($lines as $line) {
+		foreach (explode("\n", str_replace("\r\n", "\n", $answer)) as $line) {
 			$space = strpos($line, ' ');
 			if ($space === false) {
 				continue;
@@ -157,10 +152,49 @@ final class FtpsSession implements RemoteFileSession {
 	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
 	 */
 	public function listDirectory(string $directory): array {
-		$answer = $this->request(path: rtrim($directory, '/') . '/', options: [CURLOPT_CUSTOMREQUEST => 'MLSD', CURLOPT_RETURNTRANSFER => true]);
+		$folder = rtrim($directory, '/') . '/';
+		try {
+			$answer = $this->request(path: $folder, options: [CURLOPT_CUSTOMREQUEST => 'MLSD', CURLOPT_RETURNTRANSFER => true]);
+			return self::parseMlsd(answer: (string)$answer);
+		} catch (RemoteFileException) {
+			// MLSD is optional (RFC 3659); vsftpd, for one, answers 500. LIST is in every server.
+		}
 
-		return self::parseMlsd(answer: (string)$answer);
+		$entries = (new FtpListing())->parse(
+			answer: (string)$this->request(path: $folder, options: [CURLOPT_RETURNTRANSFER => true]),
+			now: time()
+		);
+		foreach ($entries as $index => $entry) {
+			if ($entry['isDirectory'] === false) {
+				$entries[$index]['modifiedAt'] = $this->modifiedTimeOf(path: $folder . $entry['name']) ?? $entry['modifiedAt'];
+			}
+		}
+
+		return $entries;
 	}//end listDirectory()
+
+	/**
+	 * The exact modification time of a file (MDTM), or null when the server does not answer it.
+	 *
+	 * @param string $path The server path of the file.
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/changes/sources-sftp-adapter/specs/data-infra-connectors/spec.md#requirement-a-partners-sftp-or-ftps-server-is-a-source-req-sftp-001
+	 */
+	private function modifiedTimeOf(string $path): ?int {
+		try {
+			$time = $this->transfer(path: $path, options: [CURLOPT_NOBODY => true, CURLOPT_FILETIME => true, CURLOPT_RETURNTRANSFER => true])['fileTime'];
+		} catch (RemoteFileException) {
+			return null;
+		}
+
+		if ($time < 0) {
+			return null;
+		}
+
+		return $time;
+	}//end modifiedTimeOf()
 
 	/**
 	 * {@inheritDoc}
@@ -238,6 +272,21 @@ final class FtpsSession implements RemoteFileSession {
 	 * @throws RemoteFileException When the request fails; the message names the curl error, never the password.
 	 */
 	private function request(string $path, array $options): string|bool {
+		return $this->transfer(path: $path, options: $options)['result'];
+	}//end request()
+
+	/**
+	 * One curl request against the server, TLS required and verified, with the file time
+	 * curl read (MDTM) when CURLOPT_FILETIME was asked for.
+	 *
+	 * @param string            $path    The server path.
+	 * @param array<int, mixed> $options Extra curl options.
+	 *
+	 * @return array{result: string|bool, fileTime: int} The transfer result; fileTime -1 when unknown.
+	 *
+	 * @throws RemoteFileException When the request fails; the message names the curl error, never the password.
+	 */
+	private function transfer(string $path, array $options): array {
 		$handle = curl_init();
 		if ($handle === false) {
 			throw new RemoteFileException('The FTPS connection could not be prepared.');
@@ -259,13 +308,14 @@ final class FtpsSession implements RemoteFileSession {
 			] + $options
 		);
 
-		$result = curl_exec($handle);
-		$error  = curl_error($handle);
+		$result   = curl_exec($handle);
+		$error    = curl_error($handle);
+		$fileTime = (int)curl_getinfo($handle, CURLINFO_FILETIME);
 		curl_close($handle);
 		if ($result === false) {
 			throw new RemoteFileException('The FTPS server ' . $this->server->host . ' refused the request for "' . $path . '": ' . $error);
 		}
 
-		return $result;
-	}//end request()
+		return ['result' => $result, 'fileTime' => $fileTime];
+	}//end transfer()
 }//end class

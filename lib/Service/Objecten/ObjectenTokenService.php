@@ -339,7 +339,7 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 	 */
 	private function tokenFor(string $key): ?array {
 		foreach ($this->tokens as $token) {
-			$resolved = $this->resolveKey(reference: (string)$token['credential']);
+			$resolved = $this->resolveKey(reference: (string)$token['credential'], principal: (string)$token['principal']);
 			if ($resolved === null) {
 				continue;
 			}
@@ -358,16 +358,20 @@ class ObjectenTokenService implements ObjectenTokenServiceInterface {
 	/**
 	 * Resolve a credential reference to its key.
 	 *
+	 * The key is read as the token's principal: a counterparty request is
+	 * anonymous, so with no acting user the broker admits no credential.
+	 *
 	 * @param string $reference The reference.
+	 * @param string $principal The token's principal, the user the key is read as.
 	 *
 	 * @return string|null The key, or null when it cannot be resolved.
 	 */
-	private function resolveKey(string $reference): ?string {
+	private function resolveKey(string $reference, string $principal): ?string {
 		if ($this->credentialRead === null) {
 			return null;
 		}
 
-		$resolved = ($this->credentialRead)($reference);
+		$resolved = ($this->credentialRead)($reference, $principal);
 
 		if (is_string($resolved) === false || $resolved === '') {
 			return null;

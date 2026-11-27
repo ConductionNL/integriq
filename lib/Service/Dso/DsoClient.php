@@ -368,7 +368,7 @@ class DsoClient implements DsoConnectorProviderInterface {
 	 * @throws PayloadTooLargeException When the bijlage is larger than `$maxBytes`.
 	 * @throws DsoProviderException When the credential is unusable, the transport fails or DSO-LV answers non-2xx.
 	 *
-	 * @spec openspec/changes/dso-attachments-on-the-request/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
+	 * @spec openspec/specs/dso-omgevingsloket/spec.md#scenario-multiple-bijlagen-downloaded-and-linked
 	 */
 	public function download(array $sourceConfiguration, string $url, int $maxBytes) {
 		$request = $this->authenticatedRequest(sourceConfiguration: $sourceConfiguration, headers: ['Accept' => '*/*']);
