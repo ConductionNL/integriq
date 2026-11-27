@@ -2568,12 +2568,12 @@ class SynchronizationService implements SynchronizationServiceInterface {
 	 * @spec openspec/changes/connectors-hr-data-exchange/specs/synchronization-engine/spec.md#requirement-a-push-can-carry-the-objects-that-point-at-the-pushed-object-req-hrx-003
 	 */
 	private function embedRelatedObjects(array $synchronization, array $object): array {
-		$sourceConfig = $this->callService->applyConfigDot(($synchronization['sourceConfig'] ?? []));
+		$declaration = ($synchronization['sourceConfig']['embedRelated'] ?? null);
+		if (is_array($declaration) === false || $declaration === []) {
+			return $object;
+		}
 
-		return (new RelatedObjectEmbedder(objectService: $this->orObjectService))->embed(
-			declaration: ($sourceConfig['embedRelated'] ?? null),
-			object: $object
-		);
+		return (new RelatedObjectEmbedder(objectService: $this->orObjectService))->embed(declaration: $declaration, object: $object);
 	}//end embedRelatedObjects()
 
 	/**
