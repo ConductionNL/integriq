@@ -15,10 +15,7 @@
 -->
 <template>
 	<div class="call-log-detail" data-testid="call-log-detail">
-		<NcNoteCard
-			v-if="!captured"
-			type="info"
-			data-testid="call-log-no-body">
+		<NcNoteCard v-if="!captured" type="info" data-testid="call-log-no-body">
 			{{ t('integriq', 'No body stored: no investigation window was open') }}
 		</NcNoteCard>
 		<CnDetailGrid
@@ -51,7 +48,10 @@ import { NcNoteCard } from '@nextcloud/vue'
  * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-the-source-page-shows-the-window-and-says-when-no-body-was-stored-req-ocd-011
  */
 export function humanise(key) {
-	const spaced = String(key).replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').toLowerCase()
+	const spaced = String(key)
+		.replace(/([A-Z])/g, ' $1')
+		.replace(/_/g, ' ')
+		.toLowerCase()
 	return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
@@ -86,14 +86,22 @@ export default {
 		 * @spec openspec/changes/outbound-call-log-investigation-window-page-and-allowlist/specs/outbound-call-log/spec.md#requirement-the-source-page-shows-the-window-and-says-when-no-body-was-stored-req-ocd-011
 		 */
 		entries() {
-			return Object.entries(this.row)
-				.filter(([key, value]) => key !== '@self' && value !== null && value !== undefined && value !== '')
+			return Object.entries(this.row).filter(
+				([key, value]) =>
+					key !== '@self'
+					&& value !== null
+					&& value !== undefined
+					&& value !== '',
+			)
 		},
 
 		scalarItems() {
 			return this.entries
 				.filter(([, value]) => typeof value !== 'object')
-				.map(([key, value]) => ({ label: humanise(key), value: String(value) }))
+				.map(([key, value]) => ({
+					label: humanise(key),
+					value: String(value),
+				}))
 		},
 
 		/**
@@ -107,12 +115,20 @@ export default {
 				.filter(([, value]) => typeof value === 'object')
 				.map(([key, value]) => {
 					const inner = Object.entries(value)
-					const flat = Array.isArray(value) === false
-						&& inner.every(([, v]) => v === null || typeof v !== 'object')
+					const flat =
+						Array.isArray(value) === false
+						&& inner.every(
+							([, v]) => v === null || typeof v !== 'object',
+						)
 					return {
 						key,
 						label: humanise(key),
-						items: flat ? inner.map(([k, v]) => ({ label: humanise(k), value: String(v) })) : null,
+						items: flat
+							? inner.map(([k, v]) => ({
+									label: humanise(k),
+									value: String(v),
+								}))
+							: null,
 						json: flat ? null : JSON.stringify(value, null, 2),
 					}
 				})

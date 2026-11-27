@@ -29,7 +29,9 @@ vi.mock('@nextcloud/vue', () => ({
 	NcButton: {},
 }))
 
-const WooStarterSetSettings = (await import('@/views/admin/WooStarterSetSettings.vue')).default
+const WooStarterSetSettings = (
+	await import('@/views/admin/WooStarterSetSettings.vue')
+).default
 
 /**
  * A component context with data, methods and a placeholder-filling t().
@@ -38,7 +40,10 @@ const WooStarterSetSettings = (await import('@/views/admin/WooStarterSetSettings
  */
 function context() {
 	const ctx = {
-		t: (app, text, vars = {}) => text.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? String(vars[key]) : m)),
+		t: (app, text, vars = {}) =>
+			text.replace(/\{(\w+)\}/g, (m, key) =>
+				key in vars ? String(vars[key]) : m,
+			),
 	}
 	Object.assign(ctx, WooStarterSetSettings.data.call(ctx))
 	for (const [name, fn] of Object.entries(WooStarterSetSettings.methods)) {
@@ -54,7 +59,11 @@ function context() {
  * @return {object} The answer.
  */
 function refused(code) {
-	return { reject: Object.assign(new Error('refused'), { response: { status: 409, data: { code } } }) }
+	return {
+		reject: Object.assign(new Error('refused'), {
+			response: { status: 409, data: { code } },
+		}),
+	}
 }
 
 beforeEach(() => {
@@ -69,7 +78,9 @@ describe('WooStarterSetSettings', () => {
 
 		await vm.run()
 
-		expect(http.calls).toEqual([['post', '/apps/integriq/api/catalogi/woo-starter-set']])
+		expect(http.calls).toEqual([
+			['post', '/apps/integriq/api/catalogi/woo-starter-set'],
+		])
 		expect(vm.result).toEqual({ created: 16, skipped: 1 })
 		expect(vm.error).toBe('')
 		expect(vm.running).toBe(false)
@@ -82,13 +93,18 @@ describe('WooStarterSetSettings', () => {
 		await vm.run()
 
 		expect(vm.result).toBeNull()
-		expect(vm.error).toBe('The list of Woo information categories cannot be read. Nothing was created.')
+		expect(vm.error).toBe(
+			'The list of Woo information categories cannot be read. Nothing was created.',
+		)
 		expect(vm.running).toBe(false)
 	})
 
 	it('asks for a catalogue first when none is configured, and falls back for anything else', async () => {
 		const vm = context()
-		http.answers = [refused('catalogue-not-configured'), refused('something-else')]
+		http.answers = [
+			refused('catalogue-not-configured'),
+			refused('something-else'),
+		]
 
 		await vm.run()
 		expect(vm.error).toBe('No catalogue is configured yet. Set one up first.')

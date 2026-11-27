@@ -3155,7 +3155,8 @@ OC.L10N.register(
         "The message could not be assigned.": "Het bericht kon niet worden toegewezen.",
         "Pace: calls per window": "Tempo: aanroepen per venster",
         "Pace: window (seconds)": "Tempo: venster (seconden)",
-        "Pace: burst": "Tempo: piek"
+        "Pace: burst": "Tempo: piek",
+        "The register that holds the document types. Named typesRegister because OpenRegister reserves `register` and `schema` as request keys and drops them from an object body.": "Het register met de documenttypen. Heet typesRegister omdat OpenRegister `register` en `schema` reserveert als verzoeksleutels en ze uit de objectinhoud weglaat."
     },
     "nplurals=2; plural=(n != 1);"
 )

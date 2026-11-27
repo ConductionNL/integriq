@@ -180,16 +180,26 @@ describe('FilePickupConfigFields', () => {
 
 	it('offers the targets FilePickupSynchronization runs, files by default', () => {
 		const target = control(mountFields(), 'NcSelect', '-target')
-		expect(target.props('options').map((o) => o.id)).toEqual(['files', 'mapping'])
+		expect(target.props('options').map((o) => o.id)).toEqual([
+			'files',
+			'mapping',
+		])
 		expect(TARGET_VALUES).toEqual(['files', 'mapping'])
 		expect(target.props('modelValue').id).toBe('files')
 
 		const wrapper = mountFields({ filesFolder: 'In' })
-		control(wrapper, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'mapping' })
-		expect(lastEmitted(wrapper)).toEqual({ filesFolder: 'In', target: 'mapping' })
+		control(wrapper, 'NcSelect', '-target').vm.$emit('update:modelValue', {
+			id: 'mapping',
+		})
+		expect(lastEmitted(wrapper)).toEqual({
+			filesFolder: 'In',
+			target: 'mapping',
+		})
 
 		const back = mountFields({ target: 'mapping' })
-		control(back, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'files' })
+		control(back, 'NcSelect', '-target').vm.$emit('update:modelValue', {
+			id: 'files',
+		})
 		expect(lastEmitted(back)).toEqual({})
 	})
 
@@ -205,19 +215,33 @@ describe('FilePickupConfigFields', () => {
 		expect(format.props('options').map((o) => o.id)).toEqual(FORMAT_VALUES)
 		expect(format.props('modelValue').id).toBe('auto')
 		expect(control(mapping, 'NcTextField', '-csv-delimiter')).toBeDefined()
-		expect(control(mapping, 'NcSelect', '-after').props('inputLabel')).toBe('After a file is read')
+		expect(control(mapping, 'NcSelect', '-after').props('inputLabel')).toBe(
+			'After a file is read',
+		)
 
 		format.vm.$emit('update:modelValue', { id: 'xml' })
-		expect(lastEmitted(mapping)).toEqual({ target: 'mapping', fileFormat: 'xml' })
+		expect(lastEmitted(mapping)).toEqual({
+			target: 'mapping',
+			fileFormat: 'xml',
+		})
 
 		const xml = mountFields({ target: 'mapping', fileFormat: 'xml' })
 		expect(control(xml, 'NcTextField', '-csv-delimiter')).toBeUndefined()
-		control(xml, 'NcSelect', '-file-format').vm.$emit('update:modelValue', { id: 'auto' })
+		control(xml, 'NcSelect', '-file-format').vm.$emit('update:modelValue', {
+			id: 'auto',
+		})
 		expect(lastEmitted(xml)).toEqual({ target: 'mapping' })
 
 		const csv = mountFields({ target: 'mapping', fileFormat: 'csv' })
-		control(csv, 'NcTextField', '-csv-delimiter').vm.$emit('update:modelValue', ';')
-		expect(lastEmitted(csv)).toEqual({ target: 'mapping', fileFormat: 'csv', csvDelimiter: ';' })
+		control(csv, 'NcTextField', '-csv-delimiter').vm.$emit(
+			'update:modelValue',
+			';',
+		)
+		expect(lastEmitted(csv)).toEqual({
+			target: 'mapping',
+			fileFormat: 'csv',
+			csvDelimiter: ';',
+		})
 	})
 
 	it('stores the stability window as whole non-negative seconds, and clears it', () => {
@@ -304,7 +328,9 @@ describe('a watched Nextcloud folder', () => {
 		const target = control(wrapper, 'NcSelect', '-target')
 		const after = control(wrapper, 'NcSelect', '-after')
 
-		expect(target.props('options').map((o) => o.id)).toEqual(WATCHED_TARGET_VALUES)
+		expect(target.props('options').map((o) => o.id)).toEqual(
+			WATCHED_TARGET_VALUES,
+		)
 		expect(WATCHED_TARGET_VALUES).toEqual(['mapping', 'intake'])
 		expect(target.props('modelValue').id).toBe('mapping')
 		expect(after.props('options').map((o) => o.id)).toEqual(WATCHED_AFTER_VALUES)
@@ -317,8 +343,13 @@ describe('a watched Nextcloud folder', () => {
 		for (const suffix of ['-files-folder', '-archive-path', '-csv-delimiter']) {
 			expect(control(wrapper, 'NcTextField', suffix)).toBeUndefined()
 		}
-		const ids = wrapper.findAllComponents({ name: 'NcTextField' }).map((c) => String(c.attributes('data-id')))
-		expect(ids.some((id) => /-\d+-path$/.test(id)), 'no remote folder field').toBe(false)
+		const ids = wrapper
+			.findAllComponents({ name: 'NcTextField' })
+			.map((c) => String(c.attributes('data-id')))
+		expect(
+			ids.some((id) => /-\d+-path$/.test(id)),
+			'no remote folder field',
+		).toBe(false)
 		expect(control(wrapper, 'NcSelect', '-file-format')).toBeUndefined()
 		expect(control(wrapper, 'NcTextField', '-pattern')).toBeDefined()
 		expect(control(wrapper, 'NcTextField', '-stable-seconds')).toBeDefined()
@@ -326,8 +357,14 @@ describe('a watched Nextcloud folder', () => {
 
 	it('writes the processed and failed folders while files are moved, and drops them for tagging', () => {
 		const wrapper = mountWatched({ unrelated: 'kept' })
-		control(wrapper, 'NcTextField', '-processed-path').vm.$emit('update:modelValue', ' klaar ')
-		control(wrapper, 'NcTextField', '-failed-path').vm.$emit('update:modelValue', 'mislukt')
+		control(wrapper, 'NcTextField', '-processed-path').vm.$emit(
+			'update:modelValue',
+			' klaar ',
+		)
+		control(wrapper, 'NcTextField', '-failed-path').vm.$emit(
+			'update:modelValue',
+			'mislukt',
+		)
 		expect(wrapper.emitted('update:config').map((e) => e[0])).toEqual([
 			{ unrelated: 'kept', processedPath: 'klaar' },
 			{ unrelated: 'kept', failedPath: 'mislukt' },
@@ -341,35 +378,56 @@ describe('a watched Nextcloud folder', () => {
 	it('asks an intake target for its app, and stores mapping as no key', () => {
 		const mapping = mountWatched()
 		expect(control(mapping, 'NcTextField', '-intake-app')).toBeUndefined()
-		control(mapping, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'intake' })
+		control(mapping, 'NcSelect', '-target').vm.$emit('update:modelValue', {
+			id: 'intake',
+		})
 		expect(lastEmitted(mapping)).toEqual({ target: 'intake' })
 
 		const intake = mountWatched({ target: 'intake' })
 		const app = control(intake, 'NcTextField', '-intake-app')
 		expect(app.props('error')).toBe(true)
 		app.vm.$emit('update:modelValue', ' filinq ')
-		expect(lastEmitted(intake)).toEqual({ target: 'intake', intakeApp: 'filinq' })
+		expect(lastEmitted(intake)).toEqual({
+			target: 'intake',
+			intakeApp: 'filinq',
+		})
 
-		control(intake, 'NcSelect', '-target').vm.$emit('update:modelValue', { id: 'mapping' })
+		control(intake, 'NcSelect', '-target').vm.$emit('update:modelValue', {
+			id: 'mapping',
+		})
 		expect(lastEmitted(intake)).toEqual({})
 	})
 
 	it('is a source kind of the editor, and the widget passes watched for it', async () => {
 		get.mockReset()
-		get.mockResolvedValue({ data: { results: [{ id: 'src-folder', name: 'Woo inbox' }] } })
+		get.mockResolvedValue({
+			data: { results: [{ id: 'src-folder', name: 'Woo inbox' }] },
+		})
 		const ctx = { draft: {}, tablesEnabled: false, formsEnabled: false }
 		const typeOptions = syncKindOptions.computed.typeOptions.call(ctx)
-		const sourceTypeOptions = syncKindOptions.computed.sourceTypeOptions.call({ ...ctx, typeOptions })
+		const sourceTypeOptions = syncKindOptions.computed.sourceTypeOptions.call({
+			...ctx,
+			typeOptions,
+		})
 		expect(sourceTypeOptions.map((o) => o.id)).toContain('nextcloud-folder')
 		expect(typeOptions.map((o) => o.id)).not.toContain('nextcloud-folder')
 
 		const wrapper = mount(SyncConfigWidget, {
-			props: { kind: 'source', type: 'nextcloud-folder', sourceId: 'src-folder', config: {} },
+			props: {
+				kind: 'source',
+				type: 'nextcloud-folder',
+				sourceId: 'src-folder',
+				config: {},
+			},
 			global: { mocks: { t: translate } },
 		})
 		await flushPromises()
 
-		expect(control(wrapper, 'NcSelect', '-pickup-source').props('options')).toEqual([{ id: 'src-folder', label: 'Woo inbox' }])
-		expect(wrapper.findComponent(FilePickupConfigFields).props('watched')).toBe(true)
+		expect(
+			control(wrapper, 'NcSelect', '-pickup-source').props('options'),
+		).toEqual([{ id: 'src-folder', label: 'Woo inbox' }])
+		expect(wrapper.findComponent(FilePickupConfigFields).props('watched')).toBe(
+			true,
+		)
 	})
 })
