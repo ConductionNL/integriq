@@ -84,3 +84,5 @@ bom-npm.cdx.json
 /scratchpad/
 /task-audit.json
 /LANE-LOG.md
+# nextcloud-vue stylesheet, copied by webpack.config.js (LibraryStylesheetCopy)
+/css/nextcloud-vue.css

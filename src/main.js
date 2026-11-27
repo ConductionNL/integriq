@@ -43,7 +43,8 @@ import './publicpath.js'
 // register files so the registry can never drift behind the icons the
 // manifests name (ADR-077).
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages)
-import '@conduction/nextcloud-vue/css/index.css'
+// The library stylesheet is linked by templates/index.php (css/nextcloud-vue.css,
+// copied by LibraryStylesheetCopy), not inserted from this bundle as text.
 // GridStack CSS. `gridstack` is a *required* peerDependency of
 // @conduction/nextcloud-vue (CnDashboardGrid / CnWidgetGrid import `GridStack`
 // from it) and the library deliberately bundles neither the JS nor the CSS, so

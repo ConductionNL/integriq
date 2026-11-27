@@ -1,4 +1,4 @@
-const { withLeanBundles } = require('@conduction/nextcloud-vue/webpack')
+const { LibraryStylesheetCopy, withLeanBundles } = require('@conduction/nextcloud-vue/webpack')
 const webpackConfig = require('@nextcloud/webpack-vue-config')
 /**
  * SPDX-FileCopyrightText: 2024 Conduction B.V. <info@conduction.nl>
@@ -218,4 +218,9 @@ webpackConfig.plugins = [
 // Keep the library's lazy chunks lazy (icon packs, charts, the code editor)
 // and stop css-loader writing source maps into the JavaScript. Applied last,
 // after the app has set its own rules and optimization.
+// nextcloud-vue's stylesheet goes to css/nextcloud-vue.css, which
+// templates/index.php links instead of integriq-main inserting ~1.1 MB of CSS
+// text on every load.
+webpackConfig.plugins.push(new LibraryStylesheetCopy())
+
 module.exports = withLeanBundles(webpackConfig)
